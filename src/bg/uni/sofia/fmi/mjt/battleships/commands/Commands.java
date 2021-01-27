@@ -4,8 +4,8 @@ import java.util.Arrays;
 
 public enum  Commands {
     CREATE_GAME("create-game",true),
-    LOGIN("login",false);
-
+    LOGIN("login",false),
+    LOGOUT("logout",false);
     private final String name;
     private final Boolean hasArgument;
     Commands(String name, Boolean hasArgument){
@@ -20,6 +20,9 @@ public enum  Commands {
         return hasArgument;
     }
     public static boolean containsCommand(Command command){
+        if(command == null){
+            return false;
+        }
         return Arrays.stream(Commands.values()).anyMatch(x -> command.getName()
                 .equals(x.getName()) && command.containsArgument() == x.hasArgument());
     }

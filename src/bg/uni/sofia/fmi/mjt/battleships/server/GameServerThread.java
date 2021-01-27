@@ -1,5 +1,6 @@
 package bg.uni.sofia.fmi.mjt.battleships.server;
 
+import bg.uni.sofia.fmi.mjt.battleships.commands.Command;
 import bg.uni.sofia.fmi.mjt.battleships.commands.CommandCreator;
 import bg.uni.sofia.fmi.mjt.battleships.storage.ServerStorage;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
@@ -23,12 +24,13 @@ public class GameServerThread extends Thread{
     private static final int BUFFER_SIZE = 1024;
     private boolean isRunning;
     private final Executor executor;
+    private final Storage storage;
     private Selector selector;
     private ByteBuffer buffer;
 
     public GameServerThread(int port) {
         serverPort = port;
-        Storage storage = new ServerStorage();
+        storage = new ServerStorage();
         executor = new CommandExecutor(storage);
     }
 
@@ -50,6 +52,7 @@ public class GameServerThread extends Thread{
         if (r <= 0) {
             System.out.println("nothing to read, will close channel");
             try {
+                storage.logOutUser(storage.getUserOnChannel(clientChannel));
                 clientChannel.close();
             } catch (IOException e) {
                 return null;

@@ -27,6 +27,12 @@ public class CommandExecutor implements Executor {
                 }
                 storage.logInUser(command.getUsername(),channel);
                 return "successfully logged in";
+            case "logout":
+                if(storage.isLoggedInUser(command.getUsername())){
+                    storage.logOutUser(command.getUsername());
+                    return "successfully logged out";
+                }
+                return "not logged in";
         }
         return null;
     }

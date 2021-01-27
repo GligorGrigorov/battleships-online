@@ -11,4 +11,7 @@ public interface Storage {
     void registerUser(String username);
 
     void logInUser(String username, SocketChannel channel);
+
+    String getUserOnChannel(SocketChannel channel);
+    void logOutUser(String username);
 }

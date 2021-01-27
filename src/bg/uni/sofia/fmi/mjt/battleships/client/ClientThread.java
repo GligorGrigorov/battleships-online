@@ -63,6 +63,9 @@ public class ClientThread extends Thread {
                 if (reply.equals("user already logged in" + System.lineSeparator())) {
                     break;
                 }
+                if (reply.equals("successfully logged out" + System.lineSeparator())) {
+                    break;
+                }
             }
         } catch (IOException e) {
             System.err.print("IO exception was thrown: " + e.getMessage());
