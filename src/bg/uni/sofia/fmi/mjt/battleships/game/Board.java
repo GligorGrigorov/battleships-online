@@ -1,81 +1,42 @@
 package bg.uni.sofia.fmi.mjt.battleships.game;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Board {
-    private Cells[][] cells;
-    private int shipCellsCount;
-    private Point lastAttack;
-
-    public Board(Ship[] ships) {
-        cells = new Cells[10][10];
-        shipCellsCount = 0;
-        lastAttack = null;
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                cells[i][j] = Cells.EMPTY;
-            }
-        }
-        for (Ship ship : ships) {
-            Point p1 = ship.a();
-            Point p2 = ship.b();
-            if (p1.x() == p2.x()) {
-                for (int j = Math.min(p1.y(), p2.y()) - 1; j < Math.max(p1.y(), p2.y()); j++) {
-                    cells[j][p1.x() - 1] = Cells.SHIP;
-                    shipCellsCount++;
-                }
-            }
-            if (p1.y() == p2.y()) {
-                for (int j = Math.min(p1.x(), p2.x()) - 1; j < Math.max(p1.x(), p2.x()); j++) {
-                    cells[p1.y() - 1][j] = Cells.SHIP;
-                    shipCellsCount++;
-                }
-            }
-        }
+    private final Table[] tables;
+    private final String creator;
+    private String opponent;
+    private final String gameName;
+    private int numberOfPlayers;
+    public Board(String creator, String gameName, Table creatorTable){
+        this.tables = new Table[2];
+        this.tables[0] = creatorTable;
+        this.creator = creator;
+        this.gameName = gameName;
+        this.numberOfPlayers = 1;
     }
 
-    private boolean isInBoard(Point a) {
-        return a.x() > 0 && a.x() <= 10 && a.y() > 0 && a.y() <= 10;
+    public int getNumberOfPlayers(){
+        return numberOfPlayers;
+    }
+    public void addOpponentTable(String opponent, Table opponentTable){
+        this.tables[1] = opponentTable;
+        this.opponent = opponent;
+        numberOfPlayers++;
+    }
+    public String getCreator() {
+        return creator;
     }
 
-    public void attack(Point a) {
-        if (isInBoard(a)) {
-            Cells cell = cells[a.y() - 1][a.x() - 1];
-            if (cell == Cells.EMPTY) {
-                cell = Cells.HIT_EMPTY;
-            }
-            if (cell == Cells.SHIP) {
-                cell = Cells.HIT_SHIP;
-            }
-            cells[a.y() - 1][a.x() - 1] = cell;
-        }
-        lastAttack = a;
+    public String getName() {
+        return gameName;
     }
 
-    public String toString(boolean enemy) {
-        StringBuilder builder = new StringBuilder();
-        if (enemy) {
-            builder.append("        ENEMY BOARD");
-            builder.append(System.lineSeparator());
-            builder.append("   ");
-            for (int i = 0; i < 10; i++) {
-                builder.append(i + 1).append(" ");
-            }
-            builder.append(System.lineSeparator());
-            builder.append("   ");
-            builder.append("_ ".repeat(10));
-            builder.append(System.lineSeparator());
-            char row = 'A';
-            for (int i = 0; i < 10; i++) {
-                builder.append(row).append(" |");
-                row++;
-                for (int j = 0; j < 10; j++) {
-                    builder.append(cells[i][j].getEnemySymbol()).append("|");
-                }
-                builder.append(System.lineSeparator());
-            }
-        }
-        return builder.toString();
+    public String getCreatorOutput() {
+        return "creator side";
+    }
+
+    public String getOpponentOutput(){
+        return "opponent side";
     }
 }

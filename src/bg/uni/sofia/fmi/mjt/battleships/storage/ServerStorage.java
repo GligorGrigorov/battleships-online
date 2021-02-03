@@ -1,21 +1,25 @@
 package bg.uni.sofia.fmi.mjt.battleships.storage;
 
+import bg.uni.sofia.fmi.mjt.battleships.game.Board;
+import bg.uni.sofia.fmi.mjt.battleships.game.Table;
+
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class ServerStorage implements Storage {
 
     private final Map<String, SocketChannel> loggedInUsers;
     private final Map<SocketChannel,String> userOnChannel;
     private final Set<String> registeredUsers;
+    private final Map<String, Board> games;
+    private final Map<String, Board> inGameUsers;
 
     public ServerStorage() {
         loggedInUsers = new HashMap<>();
         registeredUsers = new HashSet<>();
         userOnChannel = new HashMap<>();
+        games = new HashMap<>();
+        inGameUsers = new HashMap<>();
     }
 
     @Override
@@ -50,4 +54,38 @@ public class ServerStorage implements Storage {
         loggedInUsers.remove(username);
     }
 
+    @Override
+    public Set<String> getGameNames() {
+        return games.keySet();
+    }
+
+    @Override
+    public Collection<Board> getGames() {
+        return games.values();
+    }
+
+    @Override
+    public boolean containsGameName(String name) {
+        return games.containsKey(name);
+    }
+
+    @Override
+    public boolean containsGame(Board game) {
+        return games.containsValue(game);
+    }
+
+    @Override
+    public boolean isUserInGame(String username) {
+        return inGameUsers.containsKey(username);
+    }
+
+    @Override
+    public void addGame(String name, Board board) {
+        games.put(name,board);
+    }
+
+    @Override
+    public void joinAGame(String username, Board board) {
+        inGameUsers.put(username,board);
+    }
 }

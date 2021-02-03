@@ -1,27 +1,27 @@
 package bg.uni.sofia.fmi.mjt.battleships.commands;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 public class Command {
     private final String name;
-    private final String argument;
+    private final String[] arguments;
     private final String username;
-    public Command(String username, String name, String argument){
-        this.name = name;
-        this.argument = argument;
-        this.username = username;
+    public Command(String input){
+        String[] tokens = input.replaceAll("\\s{2,}", " ").trim().split(" ");
+        this.name = tokens[0];
+        this.arguments = Arrays.copyOfRange(tokens,1,tokens.length - 1);
+        this.username = tokens[tokens.length - 1];
+
     }
 
     public String getUsername() {
         return username;
     }
-
-    public String getArgument() {
-        return argument;
+    public String[] getArguments() {
+        return arguments;
     }
-
     public String getName() {
         return name;
     }
-     public Boolean containsArgument(){
-        return argument != null;
-     }
 }

@@ -1,7 +1,6 @@
 package bg.uni.sofia.fmi.mjt.battleships.client;
 
 import bg.uni.sofia.fmi.mjt.battleships.commands.Command;
-import bg.uni.sofia.fmi.mjt.battleships.commands.CommandCreator;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

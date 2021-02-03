@@ -1,7 +1,6 @@
 package bg.uni.sofia.fmi.mjt.battleships.server;
 
 import bg.uni.sofia.fmi.mjt.battleships.commands.Command;
-import bg.uni.sofia.fmi.mjt.battleships.commands.CommandCreator;
 import bg.uni.sofia.fmi.mjt.battleships.storage.ServerStorage;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
 import bg.uni.sofia.fmi.mjt.battleships.commands.CommandExecutor;
@@ -43,7 +42,7 @@ public class GameServerThread extends Thread{
 
     private String getRequest(SocketChannel clientChannel) {
         buffer.clear();
-        int r = 0;
+        int r;
         try {
             r = clientChannel.read(buffer);
         } catch (IOException e) {
@@ -101,7 +100,7 @@ public class GameServerThread extends Thread{
                             break;
                         }
                         request = request.replace(System.lineSeparator(), "");
-                        String response = executor.executeCommand(CommandCreator.newCommand(request), currentChannel);
+                        String response = executor.executeCommand(new Command(request), currentChannel);
                         //String response = "Default response";
                         sendToClient(response, currentChannel);
                     } else if (key.isAcceptable()) {
