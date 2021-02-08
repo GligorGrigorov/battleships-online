@@ -1,10 +1,7 @@
 package bg.uni.sofia.fmi.mjt.battleships.game;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Table {
-    private Cells[][] cells;
+    private final Cells[][] cells;
     private int shipCellsCount;
     private Point lastAttack;
 
@@ -47,15 +44,16 @@ public class Table {
             }
             if (cell == Cells.SHIP) {
                 cell = Cells.HIT_SHIP;
+                shipCellsCount--;
             }
             cells[a.y() - 1][a.x() - 1] = cell;
         }
         lastAttack = a;
     }
 
-    public String toString(boolean enemy) {
+    public String toString(boolean enemyBoard) {
         StringBuilder builder = new StringBuilder();
-        if (enemy) {
+        if (enemyBoard) {
             builder.append("        ENEMY BOARD");
             builder.append(System.lineSeparator());
             builder.append("   ");
@@ -75,7 +73,31 @@ public class Table {
                 }
                 builder.append(System.lineSeparator());
             }
+        } else {
+            builder.append("        YOUR BOARD");
+            builder.append(System.lineSeparator());
+            builder.append("   ");
+            for (int i = 0; i < 10; i++) {
+                builder.append(i + 1).append(" ");
+            }
+            builder.append(System.lineSeparator());
+            builder.append("   ");
+            builder.append("_ ".repeat(10));
+            builder.append(System.lineSeparator());
+            char row = 'A';
+            for (int i = 0; i < 10; i++) {
+                builder.append(row).append(" |");
+                row++;
+                for (int j = 0; j < 10; j++) {
+                    builder.append(cells[i][j].getYourSymbol()).append("|");
+                }
+                builder.append(System.lineSeparator());
+            }
         }
         return builder.toString();
+    }
+
+    public int getShipCellsRemaining() {
+        return shipCellsCount;
     }
 }

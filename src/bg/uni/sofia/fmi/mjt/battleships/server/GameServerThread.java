@@ -17,10 +17,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Set;
 
-public class GameServerThread extends Thread{
+public class GameServerThread extends Thread {
     private static final String SERVER_HOST = "localhost";
     private final int serverPort;
-    private static final int BUFFER_SIZE = 1024;
+    private static final int BUFFER_SIZE = 2048;
     private boolean isRunning;
     private final Executor executor;
     private final Storage storage;

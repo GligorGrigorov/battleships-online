@@ -1,6 +1,6 @@
 package bg.uni.sofia.fmi.mjt.battleships.client;
 
-import bg.uni.sofia.fmi.mjt.battleships.commands.Command;
+import bg.uni.sofia.fmi.mjt.battleships.commands.Message;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -16,7 +15,7 @@ public class ClientThread extends Thread {
     private final int serverPort;
     private final String serverHost;
     private final String username;
-    private static final ByteBuffer BUFFER = ByteBuffer.allocateDirect(512);
+    private static final ByteBuffer BUFFER = ByteBuffer.allocateDirect(2048);
 
     public ClientThread(String host, int port, String username) {
         serverHost = host;
@@ -35,10 +34,9 @@ public class ClientThread extends Thread {
             int i = 0;
             while (true) {
                 String message;
-                if(i < configInputs.size()){
+                if (i < configInputs.size()) {
                     message = configInputs.get(i);
                 } else {
-                    System.out.println("=>");
                     message = scanner.nextLine();
                 }
                 i++;
@@ -55,14 +53,15 @@ public class ClientThread extends Thread {
                 byte[] byteArray = new byte[BUFFER.remaining()];
                 BUFFER.get(byteArray);
                 String reply = new String(byteArray, StandardCharsets.UTF_8);
-                System.out.println(reply);
-                if (reply.equals("user already exist" + System.lineSeparator())) {
+                System.out.print(reply);
+                reply = reply.split(System.lineSeparator())[0];
+                if (reply.equals(Message.ALREADY_REGISTERED.toString())) {
                     break;
                 }
-                if (reply.equals("user already logged in" + System.lineSeparator())) {
+                if (reply.equals(Message.ALREADY_LOGGED_IN.toString())) {
                     break;
                 }
-                if (reply.equals("successfully logged out" + System.lineSeparator())) {
+                if (reply.equals(Message.SUCCESSFUL_LOGOUT.toString())) {
                     break;
                 }
             }

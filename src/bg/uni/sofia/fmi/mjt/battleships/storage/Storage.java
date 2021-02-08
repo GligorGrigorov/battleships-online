@@ -1,12 +1,12 @@
 package bg.uni.sofia.fmi.mjt.battleships.storage;
 
+import bg.uni.sofia.fmi.mjt.battleships.commands.UserStatus;
 import bg.uni.sofia.fmi.mjt.battleships.game.Board;
-import bg.uni.sofia.fmi.mjt.battleships.game.Table;
+import bg.uni.sofia.fmi.mjt.battleships.game.Point;
+import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
 
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public interface Storage {
@@ -20,6 +20,7 @@ public interface Storage {
     void logInUser(String username, SocketChannel channel);
 
     String getUserOnChannel(SocketChannel channel);
+
     void logOutUser(String username);
 
     Set<String> getGameNames();
@@ -27,12 +28,26 @@ public interface Storage {
     Collection<Board> getGames();
 
     boolean containsGameName(String name);
-    boolean containsGame(Board game);
+
+    boolean containsGame(String gameName);
 
     boolean isUserInGame(String username);
 
+    boolean isUserPlaying(String username);
+
     void addGame(String name, Board board);
 
-    void joinAGame(String username,Board board);
+    void joinAGame(String username, String gameName, Ship[] ships);
 
+    String getCurrentGame(String username);
+
+    void leaveGameWithoutSaving(String username);
+
+    String getGameOutput(String username);
+
+    String attack(String username, Point point);
+
+    UserStatus getUserStatus(String username);
+
+    void setUserStatus(String username, UserStatus status);
 }

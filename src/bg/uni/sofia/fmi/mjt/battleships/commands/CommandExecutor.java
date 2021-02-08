@@ -3,11 +3,12 @@ package bg.uni.sofia.fmi.mjt.battleships.commands;
 import bg.uni.sofia.fmi.mjt.battleships.game.Board;
 import bg.uni.sofia.fmi.mjt.battleships.game.Point;
 import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
-import bg.uni.sofia.fmi.mjt.battleships.game.Table;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
 
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 public class CommandExecutor implements Executor {
     private final Storage storage;
@@ -18,11 +19,35 @@ public class CommandExecutor implements Executor {
 
     @Override
     public String executeCommand(Command command, SocketChannel channel) {
-
+        String response = "wrong command";
         if (Commands.containsCommand(command)) {
-            return processMainCommands(command, channel);
+            response = processMainCommands(command, channel);
+        } else if (isValidCoordinate(command.getName())) {
+            if (storage.isUserInGame(command.getUsername())) {
+                response = storage.attack(command.getUsername(), pointFromString(command.getName()));
+            }
         }
-        return "wrong command";
+        return response + System.lineSeparator() + storage.getUserStatus(command.getUsername()).getPrompt();
+    }
+
+    private Point pointFromString(String coordinates) {
+        int row = coordinates.charAt(0) - 'A' + 1;
+        int column = Integer.parseInt(coordinates.substring(1));
+        return new Point(column, row);
+    }
+
+    private boolean isValidCoordinate(String coordinate) {
+        if (coordinate.length() != 2) {
+            return false;
+        }
+        char row = coordinate.charAt(0);
+        int column;
+        try {
+            column = Integer.parseInt(coordinate.substring(1));
+        } catch (NumberFormatException e) {
+            return false;
+        }
+        return row >= 'A' && row <= 'J' && column >= 1 && column <= 10;
     }
 
     String processMainCommands(Command command, SocketChannel channel) {
@@ -32,43 +57,69 @@ public class CommandExecutor implements Executor {
         switch (cmdName) {
             case "login" -> {
                 if (storage.isRegisteredUser(username)) {
-                    return "user already exist";
+                    return Message.ALREADY_REGISTERED.toString();
                 } else {
                     storage.registerUser(username);
                 }
                 if (storage.isLoggedInUser(username)) {
-                    return "user already logged in";
+                    return Message.ALREADY_LOGGED_IN.toString();
                 }
                 storage.logInUser(username, channel);
-                return "successfully logged in";
+                storage.setUserStatus(username, UserStatus.IN_MAIN_MENU);
+                return Message.SUCCESSFUL_LOGIN.toString();
             }
             case "logout" -> {
                 if (storage.isLoggedInUser(username)) {
                     storage.logOutUser(username);
-                    return "successfully logged out";
+                    storage.setUserStatus(username, UserStatus.OFFLINE);
+                    return Message.SUCCESSFUL_LOGOUT.toString();
                 }
-                return "not logged in";
+                return Message.NOT_LOGGED_IN.toString();
             }
             case "create-game" -> {
                 if (storage.isUserInGame(username)) {
-                    return "not allowed command";
+                    return Message.NOT_ALLOWED.toString();
                 }
                 if (storage.containsGameName(cmdArguments[0])) {
-                    return "game with this name already exist";
+                    return Message.GAME_EXISTS.toString();
                 }
-                Board board = new Board(username, cmdArguments[0], new Table(getShipsFromArgument(cmdArguments)));
-                storage.addGame(username, board);
-                storage.joinAGame(username, board);
-                if(storage.containsGame(board)){
-                    return "game successfully created";
-                }
-                return "problem while creating a game";
+                Board board = new Board(username, cmdArguments[0]);
+                storage.addGame(cmdArguments[0], board);
+                storage.joinAGame(username, cmdArguments[0], getShipsFromArgument(cmdArguments));
+                storage.setUserStatus(username, UserStatus.IN_GAME);
+                return Message.GAME_SUCCESSFULLY_CREATED.toString();
             }
             case "list-games" -> {
                 if (storage.isUserInGame(username)) {
-                    return "not allowed command";
+                    return Message.NOT_ALLOWED.toString();
                 }
                 return gamesTable(storage.getGames());
+            }
+            case "join-game" -> {
+                if (storage.isUserInGame(username)) {
+                    return Message.NOT_ALLOWED.toString();
+                }
+                if (!storage.containsGameName(cmdArguments[0])) {
+                    return Message.GAME_DO_NOT_EXIST.toString();
+                }
+                storage.joinAGame(username, cmdArguments[0], getShipsFromArgument(cmdArguments));
+                storage.setUserStatus(username, UserStatus.IN_GAME);
+                return "SUCCESFul join";
+            }
+            case "start" -> {
+                if (storage.getUserStatus(username) != UserStatus.IN_GAME) {
+                    return Message.NOT_ALLOWED.toString();
+                }
+                storage.setUserStatus(username, UserStatus.PLAYING);
+                return "You are in game";
+            }
+            case "exit" -> {
+                if (!storage.isUserInGame(username)) {
+                    return Message.NOT_ALLOWED.toString();
+                }
+                storage.leaveGameWithoutSaving(username);
+                storage.setUserStatus(username, UserStatus.IN_MAIN_MENU);
+                return Message.GAME_LEFT.toString();
             }
         }
         return null;
@@ -76,16 +127,25 @@ public class CommandExecutor implements Executor {
 
     private String gamesTable(Collection<Board> games) {
         StringBuilder builder = new StringBuilder();
-        for (Board game:
-             games) {
-            builder.append(game.getName()).append(" | ").append(game.getCreator()).append(System.lineSeparator());
-        }
+        int cellSize = 20;
+        builder.append(row(cellSize, new String[]{"NAME", "CREATOR", "STATUS", "PLAYERS"}))
+                .append(System.lineSeparator());
+        games.forEach(x -> builder.append(row(cellSize,
+                new String[]{x.getName(), x.getCreator(), x.getStatus().toString(), x.getNumberOfPlayers() + ""}))
+                .append(System.lineSeparator()));
         return builder.toString();
     }
 
-    private Ship[] getShipsFromArgument(String[] arguments){
+    public String row(int cellSize, String[] elements) {
+        StringBuilder builder = new StringBuilder();
+        return Arrays.stream(elements)
+                .map(x -> "| " + x + " ".repeat(cellSize - x.length() - 2))
+                .collect(Collectors.joining(""));
+    }
+
+    private Ship[] getShipsFromArgument(String[] arguments) {
         Ship[] ships = new Ship[5];
-        if (arguments.length == 6){
+        if (arguments.length == 6) {
             for (int i = 1; i < arguments.length; i++) {
                 String[] tokens = arguments[i].split(",");
                 String first = tokens[0];

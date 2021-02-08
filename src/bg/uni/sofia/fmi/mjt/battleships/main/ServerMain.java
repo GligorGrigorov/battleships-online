@@ -13,7 +13,7 @@ public class ServerMain {
         do {
             System.out.println("Command:");
             input = scanner.nextLine();
-        }while (!input.equals("stop"));
+        } while (!input.equals("stop"));
         server.stopServer();
     }
 

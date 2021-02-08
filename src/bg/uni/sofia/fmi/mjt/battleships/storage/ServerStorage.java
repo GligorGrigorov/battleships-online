@@ -1,6 +1,9 @@
 package bg.uni.sofia.fmi.mjt.battleships.storage;
 
+import bg.uni.sofia.fmi.mjt.battleships.commands.UserStatus;
 import bg.uni.sofia.fmi.mjt.battleships.game.Board;
+import bg.uni.sofia.fmi.mjt.battleships.game.Point;
+import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
 import bg.uni.sofia.fmi.mjt.battleships.game.Table;
 
 import java.nio.channels.SocketChannel;
@@ -9,10 +12,12 @@ import java.util.*;
 public class ServerStorage implements Storage {
 
     private final Map<String, SocketChannel> loggedInUsers;
-    private final Map<SocketChannel,String> userOnChannel;
+    private final Map<SocketChannel, String> userOnChannel;
     private final Set<String> registeredUsers;
     private final Map<String, Board> games;
-    private final Map<String, Board> inGameUsers;
+    private final Map<String, String> inGameUsers;
+    private final Set<String> playingUsers;
+    private final Map<String, UserStatus> userStatusMap;
 
     public ServerStorage() {
         loggedInUsers = new HashMap<>();
@@ -20,6 +25,8 @@ public class ServerStorage implements Storage {
         userOnChannel = new HashMap<>();
         games = new HashMap<>();
         inGameUsers = new HashMap<>();
+        playingUsers = new HashSet<>();
+        userStatusMap = new HashMap<>();
     }
 
     @Override
@@ -40,7 +47,7 @@ public class ServerStorage implements Storage {
     @Override
     public void logInUser(String username, SocketChannel channel) {
         loggedInUsers.put(username, channel);
-        userOnChannel.put(channel,username);
+        userOnChannel.put(channel, username);
     }
 
     @Override
@@ -70,8 +77,8 @@ public class ServerStorage implements Storage {
     }
 
     @Override
-    public boolean containsGame(Board game) {
-        return games.containsValue(game);
+    public boolean containsGame(String gameName) {
+        return games.containsKey(gameName);
     }
 
     @Override
@@ -80,12 +87,54 @@ public class ServerStorage implements Storage {
     }
 
     @Override
-    public void addGame(String name, Board board) {
-        games.put(name,board);
+    public boolean isUserPlaying(String username) {
+        return playingUsers.contains(username);
     }
 
     @Override
-    public void joinAGame(String username, Board board) {
-        inGameUsers.put(username,board);
+    public void addGame(String name, Board board) {
+        games.put(name, board);
+    }
+
+    @Override
+    public void joinAGame(String username, String gameName, Ship[] ships) {
+        inGameUsers.put(username, gameName);
+        games.get(gameName).addPlayer(username, new Table(ships));
+    }
+
+    @Override
+    public String getCurrentGame(String username) {
+        return inGameUsers.get(username);
+    }
+
+    @Override
+    public void leaveGameWithoutSaving(String username) {
+        String gameName = inGameUsers.get(username);
+        if (games.get(gameName).getNumberOfPlayers() == 0) {
+            games.remove(gameName);
+        } else {
+            games.get(inGameUsers.get(username)).surrender(username);
+        }
+        inGameUsers.remove(username);
+    }
+
+    @Override
+    public String getGameOutput(String username) {
+        return games.get(inGameUsers.get(username)).getOutput(username);
+    }
+
+    @Override
+    public String attack(String username, Point point) {
+        return games.get(inGameUsers.get(username)).attack(username, point);
+    }
+
+    @Override
+    public UserStatus getUserStatus(String username) {
+        return userStatusMap.get(username);
+    }
+
+    @Override
+    public void setUserStatus(String username, UserStatus status) {
+        userStatusMap.put(username, status);
     }
 }
