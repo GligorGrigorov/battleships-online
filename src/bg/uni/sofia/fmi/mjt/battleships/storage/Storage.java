@@ -6,6 +6,7 @@ import bg.uni.sofia.fmi.mjt.battleships.game.Point;
 import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
 
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Set;
 
@@ -33,13 +34,13 @@ public interface Storage {
 
     boolean isUserInGame(String username);
 
-    boolean isUserPlaying(String username);
-
     void addGame(String name, Board board);
 
     void joinAGame(String username, String gameName, Ship[] ships);
 
     String getCurrentGame(String username);
+
+    Board getGameByName(String name);
 
     void leaveGameWithoutSaving(String username);
 
@@ -50,4 +51,12 @@ public interface Storage {
     UserStatus getUserStatus(String username);
 
     void setUserStatus(String username, UserStatus status);
+
+    void addSavedGame(String username,String gameName, Path filePath);
+
+    void removeGame(String gameName);
+
+    Path getSavedGame(String username, String gameName);
+
+    Collection<String> getSavedGames(String username);
 }

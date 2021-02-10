@@ -1,5 +1,7 @@
 package bg.uni.sofia.fmi.mjt.battleships.game;
 
-public record Point(int x, int y) {
+import java.io.Serializable;
+
+public record Point(int x, int y) implements Serializable {
 
 }

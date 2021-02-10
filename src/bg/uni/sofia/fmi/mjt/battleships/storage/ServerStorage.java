@@ -7,6 +7,7 @@ import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
 import bg.uni.sofia.fmi.mjt.battleships.game.Table;
 
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.*;
 
 public class ServerStorage implements Storage {
@@ -16,8 +17,8 @@ public class ServerStorage implements Storage {
     private final Set<String> registeredUsers;
     private final Map<String, Board> games;
     private final Map<String, String> inGameUsers;
-    private final Set<String> playingUsers;
     private final Map<String, UserStatus> userStatusMap;
+    private final Map<String, Map<String, Path>> savedGames;
 
     public ServerStorage() {
         loggedInUsers = new HashMap<>();
@@ -25,8 +26,8 @@ public class ServerStorage implements Storage {
         userOnChannel = new HashMap<>();
         games = new HashMap<>();
         inGameUsers = new HashMap<>();
-        playingUsers = new HashSet<>();
         userStatusMap = new HashMap<>();
+        savedGames = new HashMap<>();
     }
 
     @Override
@@ -87,11 +88,6 @@ public class ServerStorage implements Storage {
     }
 
     @Override
-    public boolean isUserPlaying(String username) {
-        return playingUsers.contains(username);
-    }
-
-    @Override
     public void addGame(String name, Board board) {
         games.put(name, board);
     }
@@ -105,6 +101,11 @@ public class ServerStorage implements Storage {
     @Override
     public String getCurrentGame(String username) {
         return inGameUsers.get(username);
+    }
+
+    @Override
+    public Board getGameByName(String name) {
+        return games.get(name);
     }
 
     @Override
@@ -136,5 +137,29 @@ public class ServerStorage implements Storage {
     @Override
     public void setUserStatus(String username, UserStatus status) {
         userStatusMap.put(username, status);
+    }
+
+    @Override
+    public void addSavedGame(String username, String gameName ,Path filePath) {
+        savedGames.computeIfAbsent(username, k -> new HashMap<>());
+        savedGames.get(username).put(gameName,filePath);
+    }
+
+    @Override
+    public void removeGame(String gameName) {
+        games.remove(gameName);
+    }
+
+    @Override
+    public Path getSavedGame(String username, String gameName) {
+        return savedGames.get(username).get(gameName);
+    }
+
+    @Override
+    public Collection<String> getSavedGames(String username) {
+        if(savedGames.get(username) == null){
+            return new HashSet<>();
+        }
+        return savedGames.get(username).keySet();
     }
 }

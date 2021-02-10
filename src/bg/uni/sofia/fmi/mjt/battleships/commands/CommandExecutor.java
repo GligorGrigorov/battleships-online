@@ -1,20 +1,26 @@
 package bg.uni.sofia.fmi.mjt.battleships.commands;
 
+import bg.uni.sofia.fmi.mjt.battleships.files.FileHandler;
 import bg.uni.sofia.fmi.mjt.battleships.game.Board;
 import bg.uni.sofia.fmi.mjt.battleships.game.Point;
 import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
 
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
 public class CommandExecutor implements Executor {
     private final Storage storage;
+    private final FileHandler fileHandler;
+
+    private static final String GAMES_FILENAME = "saved-games";
 
     public CommandExecutor(Storage storage) {
         this.storage = storage;
+        this.fileHandler = new FileHandler(Path.of(GAMES_FILENAME), storage);
     }
 
     @Override
@@ -96,7 +102,7 @@ public class CommandExecutor implements Executor {
                 return gamesTable(storage.getGames());
             }
             case "join-game" -> {
-                if (storage.isUserInGame(username)) {
+                if (storage.getUserStatus(username) == UserStatus.IN_GAME || storage.getUserStatus(username) == UserStatus.PLAYING) {
                     return Message.NOT_ALLOWED.toString();
                 }
                 if (!storage.containsGameName(cmdArguments[0])) {
@@ -120,6 +126,33 @@ public class CommandExecutor implements Executor {
                 storage.leaveGameWithoutSaving(username);
                 storage.setUserStatus(username, UserStatus.IN_MAIN_MENU);
                 return Message.GAME_LEFT.toString();
+            }
+            case "save-game" -> {
+                if (storage.getUserStatus(username) != UserStatus.PLAYING) {
+                    return Message.NOT_ALLOWED.toString();
+                }
+                fileHandler.saveGame(username);
+                String firstPlayer = storage.getGameByName(storage.getCurrentGame(username)).getCreator();
+                String secondPlayer = storage.getGameByName(storage.getCurrentGame(username)).getOpponent();
+                storage.leaveGameWithoutSaving(firstPlayer);
+                storage.leaveGameWithoutSaving(secondPlayer);
+                storage.setUserStatus(firstPlayer, UserStatus.IN_MAIN_MENU);
+                storage.setUserStatus(secondPlayer, UserStatus.IN_MAIN_MENU);
+                storage.removeGame(storage.getCurrentGame(username));
+                return "game saved";
+            }
+            case "saved-games" -> {
+                if (storage.getUserStatus(username) == UserStatus.IN_MAIN_MENU) {
+                    return storage.getSavedGames(username).stream().collect(Collectors.joining(System.lineSeparator()));
+                }
+                return Message.NOT_ALLOWED.toString();
+            }
+            case "load-game" -> {
+                if (storage.getUserStatus(username) != UserStatus.IN_MAIN_MENU) {
+                    return Message.NOT_ALLOWED.toString();
+                }
+                //TODO
+                fileHandler.loadGame(storage.getSavedGame(username, cmdArguments[0]));
             }
         }
         return null;

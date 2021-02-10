@@ -1,6 +1,11 @@
 package bg.uni.sofia.fmi.mjt.battleships.game;
 
-public class Table {
+import java.io.Serial;
+import java.io.Serializable;
+
+public class Table implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1349480397026438792L;
     private final Cells[][] cells;
     private int shipCellsCount;
     private Point lastAttack;

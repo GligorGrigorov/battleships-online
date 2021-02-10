@@ -1,10 +1,16 @@
 package bg.uni.sofia.fmi.mjt.battleships.game;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Board {
+public class Board implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 134948039702643492L;
+
     //Map<String, Table> tables;
     private final Table[] tables;
     private final String[] names;
@@ -98,6 +104,10 @@ public class Board {
             return getOpponentOutput();
         }
         return "error while attacking";
+    }
+
+    public String getOpponent() {
+        return names[1];
     }
 
     public String getCreator() {
