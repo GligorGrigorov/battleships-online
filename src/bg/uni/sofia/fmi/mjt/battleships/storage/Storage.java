@@ -59,4 +59,6 @@ public interface Storage {
     Path getSavedGame(String username, String gameName);
 
     Collection<String> getSavedGames(String username);
+
+    void continuePlaying(String username, String gameName);
 }

@@ -162,4 +162,9 @@ public class ServerStorage implements Storage {
         }
         return savedGames.get(username).keySet();
     }
+
+    @Override
+    public void continuePlaying(String username, String gameName) {
+        inGameUsers.put(username,gameName);
+    }
 }

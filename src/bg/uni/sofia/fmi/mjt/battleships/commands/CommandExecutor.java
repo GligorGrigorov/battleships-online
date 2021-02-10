@@ -29,7 +29,7 @@ public class CommandExecutor implements Executor {
         if (Commands.containsCommand(command)) {
             response = processMainCommands(command, channel);
         } else if (isValidCoordinate(command.getName())) {
-            if (storage.isUserInGame(command.getUsername())) {
+            if (storage.getUserStatus(command.getUsername()) == UserStatus.PLAYING) {
                 response = storage.attack(command.getUsername(), pointFromString(command.getName()));
             }
         }
@@ -60,102 +60,119 @@ public class CommandExecutor implements Executor {
         String cmdName = command.getName();
         String[] cmdArguments = command.getArguments();
         String username = command.getUsername();
-        switch (cmdName) {
-            case "login" -> {
-                if (storage.isRegisteredUser(username)) {
-                    return Message.ALREADY_REGISTERED.toString();
-                } else {
-                    storage.registerUser(username);
-                }
-                if (storage.isLoggedInUser(username)) {
-                    return Message.ALREADY_LOGGED_IN.toString();
-                }
-                storage.logInUser(username, channel);
-                storage.setUserStatus(username, UserStatus.IN_MAIN_MENU);
-                return Message.SUCCESSFUL_LOGIN.toString();
-            }
-            case "logout" -> {
-                if (storage.isLoggedInUser(username)) {
-                    storage.logOutUser(username);
-                    storage.setUserStatus(username, UserStatus.OFFLINE);
-                    return Message.SUCCESSFUL_LOGOUT.toString();
-                }
-                return Message.NOT_LOGGED_IN.toString();
-            }
-            case "create-game" -> {
-                if (storage.isUserInGame(username)) {
-                    return Message.NOT_ALLOWED.toString();
-                }
-                if (storage.containsGameName(cmdArguments[0])) {
-                    return Message.GAME_EXISTS.toString();
-                }
-                Board board = new Board(username, cmdArguments[0]);
-                storage.addGame(cmdArguments[0], board);
-                storage.joinAGame(username, cmdArguments[0], getShipsFromArgument(cmdArguments));
-                storage.setUserStatus(username, UserStatus.IN_GAME);
-                return Message.GAME_SUCCESSFULLY_CREATED.toString();
-            }
-            case "list-games" -> {
-                if (storage.isUserInGame(username)) {
-                    return Message.NOT_ALLOWED.toString();
-                }
-                return gamesTable(storage.getGames());
-            }
-            case "join-game" -> {
-                if (storage.getUserStatus(username) == UserStatus.IN_GAME || storage.getUserStatus(username) == UserStatus.PLAYING) {
-                    return Message.NOT_ALLOWED.toString();
-                }
-                if (!storage.containsGameName(cmdArguments[0])) {
-                    return Message.GAME_DO_NOT_EXIST.toString();
-                }
-                storage.joinAGame(username, cmdArguments[0], getShipsFromArgument(cmdArguments));
-                storage.setUserStatus(username, UserStatus.IN_GAME);
-                return "SUCCESFul join";
-            }
-            case "start" -> {
-                if (storage.getUserStatus(username) != UserStatus.IN_GAME) {
-                    return Message.NOT_ALLOWED.toString();
-                }
-                storage.setUserStatus(username, UserStatus.PLAYING);
-                return "You are in game";
-            }
-            case "exit" -> {
-                if (!storage.isUserInGame(username)) {
-                    return Message.NOT_ALLOWED.toString();
-                }
-                storage.leaveGameWithoutSaving(username);
-                storage.setUserStatus(username, UserStatus.IN_MAIN_MENU);
-                return Message.GAME_LEFT.toString();
-            }
-            case "save-game" -> {
-                if (storage.getUserStatus(username) != UserStatus.PLAYING) {
-                    return Message.NOT_ALLOWED.toString();
-                }
-                fileHandler.saveGame(username);
-                String firstPlayer = storage.getGameByName(storage.getCurrentGame(username)).getCreator();
-                String secondPlayer = storage.getGameByName(storage.getCurrentGame(username)).getOpponent();
-                storage.leaveGameWithoutSaving(firstPlayer);
-                storage.leaveGameWithoutSaving(secondPlayer);
-                storage.setUserStatus(firstPlayer, UserStatus.IN_MAIN_MENU);
-                storage.setUserStatus(secondPlayer, UserStatus.IN_MAIN_MENU);
-                storage.removeGame(storage.getCurrentGame(username));
-                return "game saved";
-            }
-            case "saved-games" -> {
-                if (storage.getUserStatus(username) == UserStatus.IN_MAIN_MENU) {
-                    return storage.getSavedGames(username).stream().collect(Collectors.joining(System.lineSeparator()));
-                }
-                return Message.NOT_ALLOWED.toString();
-            }
-            case "load-game" -> {
-                if (storage.getUserStatus(username) != UserStatus.IN_MAIN_MENU) {
-                    return Message.NOT_ALLOWED.toString();
-                }
-                //TODO
-                fileHandler.loadGame(storage.getSavedGame(username, cmdArguments[0]));
-            }
+        return switch (cmdName) {
+            case "login" -> login(username,channel);
+            case "logout" -> logout(username);
+            case "create-game" -> createGame(username,cmdArguments);
+            case "list-games" -> listGames(username);
+            case "join-game" -> joinGame(username, cmdArguments);
+            case "start" -> start(username);
+            case "exit" -> exit(username);
+            case "save-game" -> saveGame(username);
+            case "saved-games" -> savedGames(username);
+            case "load-game" -> loadGame(username, cmdArguments);
+            default -> null;
+        };
+    }
+
+    //Command logic methods
+    String login(String username, SocketChannel channel){
+        if (storage.isRegisteredUser(username)) {
+            return Message.ALREADY_REGISTERED.toString();
+        } else {
+            storage.registerUser(username);
         }
-        return null;
+        if (storage.isLoggedInUser(username)) {
+            return Message.ALREADY_LOGGED_IN.toString();
+        }
+        storage.logInUser(username, channel);
+        storage.setUserStatus(username, UserStatus.IN_MAIN_MENU);
+        return Message.SUCCESSFUL_LOGIN.toString();
+    }
+    String logout(String username){
+        if (storage.isLoggedInUser(username)) {
+            storage.logOutUser(username);
+            storage.setUserStatus(username, UserStatus.OFFLINE);
+            return Message.SUCCESSFUL_LOGOUT.toString();
+        }
+        return Message.NOT_LOGGED_IN.toString();
+    }
+    String createGame(String username, String[] cmdArguments){
+        if (storage.isUserInGame(username)) {
+            return Message.NOT_ALLOWED.toString();
+        }
+        if (storage.containsGameName(cmdArguments[0])) {
+            return Message.GAME_EXISTS.toString();
+        }
+        Board board = new Board(username, cmdArguments[0]);
+        storage.addGame(cmdArguments[0], board);
+        storage.joinAGame(username, cmdArguments[0], getShipsFromArgument(cmdArguments));
+        storage.setUserStatus(username, UserStatus.IN_GAME);
+        return Message.GAME_SUCCESSFULLY_CREATED.toString();
+    }
+    String listGames(String username){
+        if (storage.isUserInGame(username)) {
+            return Message.NOT_ALLOWED.toString();
+        }
+        return gamesTable(storage.getGames());
+    }
+    String joinGame(String username, String[] cmdArguments){
+        if (storage.getUserStatus(username) == UserStatus.IN_GAME || storage.getUserStatus(username) == UserStatus.PLAYING) {
+            return Message.NOT_ALLOWED.toString();
+        }
+        if (!storage.containsGameName(cmdArguments[0])) {
+            return Message.GAME_DO_NOT_EXIST.toString();
+        }
+        storage.joinAGame(username, cmdArguments[0], getShipsFromArgument(cmdArguments));
+        storage.setUserStatus(username, UserStatus.IN_GAME);
+        return "SUCCESFul join";
+    }
+    String start(String username){
+        if (storage.getUserStatus(username) != UserStatus.IN_GAME) {
+            return Message.NOT_ALLOWED.toString();
+        }
+        storage.setUserStatus(username, UserStatus.PLAYING);
+        return "You are in game";
+    }
+    String exit(String username){
+        if (!storage.isUserInGame(username)) {
+            return Message.NOT_ALLOWED.toString();
+        }
+        storage.leaveGameWithoutSaving(username);
+        storage.setUserStatus(username, UserStatus.IN_MAIN_MENU);
+        return Message.GAME_LEFT.toString();
+    }
+    String saveGame(String username){
+        if (storage.getUserStatus(username) != UserStatus.PLAYING) {
+            return Message.NOT_ALLOWED.toString();
+        }
+        String firstPlayer = storage.getGameByName(storage.getCurrentGame(username)).getCreator();
+        String secondPlayer = storage.getGameByName(storage.getCurrentGame(username)).getOpponent();
+        if(firstPlayer == null || secondPlayer == null){
+            return "can't save game before start";
+        }
+        fileHandler.saveGame(username);
+        storage.leaveGameWithoutSaving(firstPlayer);
+        storage.leaveGameWithoutSaving(secondPlayer);
+        storage.setUserStatus(firstPlayer, UserStatus.IN_MAIN_MENU);
+        storage.setUserStatus(secondPlayer, UserStatus.IN_MAIN_MENU);
+        storage.removeGame(storage.getCurrentGame(username));
+        return "game saved";
+    }
+    String savedGames(String username){
+        if (storage.getUserStatus(username) == UserStatus.IN_MAIN_MENU) {
+            return storage.getSavedGames(username).stream().collect(Collectors.joining(System.lineSeparator()));
+        }
+        return Message.NOT_ALLOWED.toString();
+    }
+    String loadGame(String username, String[] cmdArguments) {
+        if (storage.getUserStatus(username) != UserStatus.IN_MAIN_MENU) {
+            return Message.NOT_ALLOWED.toString();
+        }
+        fileHandler.loadGame(storage.getSavedGame(username, cmdArguments[0]));
+        storage.setUserStatus(username,UserStatus.IN_GAME);
+        storage.continuePlaying(username,cmdArguments[0]);
+        return "successfully loaded game";
     }
 
     private String gamesTable(Collection<Board> games) {

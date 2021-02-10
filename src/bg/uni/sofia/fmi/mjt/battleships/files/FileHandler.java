@@ -3,6 +3,7 @@ package bg.uni.sofia.fmi.mjt.battleships.files;
 import bg.uni.sofia.fmi.mjt.battleships.game.Board;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -69,6 +70,7 @@ public class FileHandler {
                 storage.addGame(game.getName(), game);
                 Files.delete(path);
             }
+        } catch (EOFException ignored) {
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
