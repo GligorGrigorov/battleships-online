@@ -31,13 +31,18 @@ public class ClientThread extends Thread {
             List<String> configInputs = new ArrayList<>();
             System.out.println("Connected");
             configInputs.add("login");
+            new Thread(new ResponseReceiver(socketChannel)).start();
             int i = 0;
             while (true) {
                 String message;
                 if (i < configInputs.size()) {
                     message = configInputs.get(i);
                 } else {
-                    message = scanner.nextLine();
+                    if(scanner.hasNext()){
+                        message = scanner.nextLine();
+                    } else {
+                        break;
+                    }
                 }
                 i++;
                 message = message + " " + username + System.lineSeparator();
@@ -45,25 +50,6 @@ public class ClientThread extends Thread {
                 BUFFER.put(message.getBytes());
                 BUFFER.flip();
                 socketChannel.write(BUFFER);
-
-                BUFFER.clear();
-                socketChannel.read(BUFFER);
-                BUFFER.flip();
-
-                byte[] byteArray = new byte[BUFFER.remaining()];
-                BUFFER.get(byteArray);
-                String reply = new String(byteArray, StandardCharsets.UTF_8);
-                System.out.print(reply);
-                reply = reply.split(System.lineSeparator())[0];
-                if (reply.equals(Message.ALREADY_REGISTERED.toString())) {
-                    break;
-                }
-                if (reply.equals(Message.ALREADY_LOGGED_IN.toString())) {
-                    break;
-                }
-                if (reply.equals(Message.SUCCESSFUL_LOGOUT.toString())) {
-                    break;
-                }
             }
         } catch (IOException e) {
             System.err.print("IO exception was thrown: " + e.getMessage());

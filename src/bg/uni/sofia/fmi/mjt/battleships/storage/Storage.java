@@ -61,4 +61,8 @@ public interface Storage {
     Collection<String> getSavedGames(String username);
 
     void continuePlaying(String username, String gameName);
+
+    SocketChannel getChannel(String username);
+
+    String getOpponent(String username);
 }

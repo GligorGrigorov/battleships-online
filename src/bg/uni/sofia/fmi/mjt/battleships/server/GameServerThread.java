@@ -1,6 +1,7 @@
 package bg.uni.sofia.fmi.mjt.battleships.server;
 
 import bg.uni.sofia.fmi.mjt.battleships.commands.Command;
+import bg.uni.sofia.fmi.mjt.battleships.files.FileHandler;
 import bg.uni.sofia.fmi.mjt.battleships.storage.ServerStorage;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
 import bg.uni.sofia.fmi.mjt.battleships.commands.CommandExecutor;
@@ -14,10 +15,11 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
-import java.util.Set;
+import java.nio.file.Path;
+import java.util.*;
 
 public class GameServerThread extends Thread {
+    private static final String GAMES_FILENAME = "saved-games";
     private static final String SERVER_HOST = "localhost";
     private final int serverPort;
     private static final int BUFFER_SIZE = 2048;
@@ -26,11 +28,16 @@ public class GameServerThread extends Thread {
     private final Storage storage;
     private Selector selector;
     private ByteBuffer buffer;
+    private final Queue<Pair> responsesQueue;
+    private ResponseSender sender;
 
     public GameServerThread(int port) {
         serverPort = port;
         storage = new ServerStorage();
-        executor = new CommandExecutor(storage);
+        responsesQueue = new LinkedList<>();
+        executor = new CommandExecutor(storage, new FileHandler(Path.of(GAMES_FILENAME), storage), responsesQueue);
+        sender = new ResponseSender(responsesQueue);
+        new Thread(sender).start();
     }
 
     public void stopServer() {
@@ -100,9 +107,9 @@ public class GameServerThread extends Thread {
                             break;
                         }
                         request = request.replace(System.lineSeparator(), "");
-                        String response = executor.executeCommand(new Command(request), currentChannel);
+                        executor.executeCommand(new Command(request), currentChannel);
                         //String response = "Default response";
-                        sendToClient(response, currentChannel);
+                        //sendToClient(response, currentChannel);
                     } else if (key.isAcceptable()) {
                         ServerSocketChannel sockChannel = (ServerSocketChannel) key.channel();
                         SocketChannel accept = sockChannel.accept();

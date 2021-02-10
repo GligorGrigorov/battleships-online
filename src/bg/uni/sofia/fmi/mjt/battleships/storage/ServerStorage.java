@@ -100,6 +100,9 @@ public class ServerStorage implements Storage {
 
     @Override
     public String getCurrentGame(String username) {
+        if(!inGameUsers.containsKey(username)) {
+            return null;
+        }
         return inGameUsers.get(username);
     }
 
@@ -121,6 +124,11 @@ public class ServerStorage implements Storage {
 
     @Override
     public String getGameOutput(String username) {
+        Board game = games.get(inGameUsers.get(username));
+        if(game == null) {
+            return null;
+            //TODO try using exceptions
+        }
         return games.get(inGameUsers.get(username)).getOutput(username);
     }
 
@@ -166,5 +174,19 @@ public class ServerStorage implements Storage {
     @Override
     public void continuePlaying(String username, String gameName) {
         inGameUsers.put(username,gameName);
+    }
+
+    @Override
+    public SocketChannel getChannel(String username) {
+        return loggedInUsers.get(username);
+    }
+
+    @Override
+    public String getOpponent(String username) {
+        Board game = getGameByName(getCurrentGame(username));
+        if(game == null){
+            return null;
+        }
+        return game.getOpponent().equals(username) ? game.getCreator() : game.getOpponent();
     }
 }

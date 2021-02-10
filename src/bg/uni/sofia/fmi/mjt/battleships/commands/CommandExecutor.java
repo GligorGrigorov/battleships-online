@@ -4,36 +4,55 @@ import bg.uni.sofia.fmi.mjt.battleships.files.FileHandler;
 import bg.uni.sofia.fmi.mjt.battleships.game.Board;
 import bg.uni.sofia.fmi.mjt.battleships.game.Point;
 import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
+import bg.uni.sofia.fmi.mjt.battleships.server.Pair;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
 
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Queue;
 import java.util.stream.Collectors;
 
 public class CommandExecutor implements Executor {
-    private final Storage storage;
-    private final FileHandler fileHandler;
 
     private static final String GAMES_FILENAME = "saved-games";
 
-    public CommandExecutor(Storage storage) {
+    private final Storage storage;
+    private final FileHandler fileHandler;
+    private final Queue<Pair> responsesQueue;
+
+    public CommandExecutor(Storage storage, FileHandler fileHandler, Queue<Pair> responsesQueue) {
         this.storage = storage;
-        this.fileHandler = new FileHandler(Path.of(GAMES_FILENAME), storage);
+        this.fileHandler = fileHandler;
+        this.responsesQueue = responsesQueue;
+    }
+
+    private void addResponse(String username, String response, SocketChannel channel) {
+        synchronized (responsesQueue) {
+            responsesQueue.add(new Pair(response
+                    + System.lineSeparator()
+                    + storage.getUserStatus(username).getPrompt(), channel));
+            responsesQueue.notifyAll();
+        }
     }
 
     @Override
-    public String executeCommand(Command command, SocketChannel channel) {
-        String response = "wrong command";
+    public void executeCommand(Command command, SocketChannel channel) {
+        String response = Message.WRONG_COMMAND.toString();
+        String cmdName = command.getName();
+        String username = command.getUsername();
+
         if (Commands.containsCommand(command)) {
             response = processMainCommands(command, channel);
-        } else if (isValidCoordinate(command.getName())) {
-            if (storage.getUserStatus(command.getUsername()) == UserStatus.PLAYING) {
-                response = storage.attack(command.getUsername(), pointFromString(command.getName()));
+        } else if (isValidCoordinate(cmdName) && storage.getUserStatus(username) == UserStatus.PLAYING) {
+            response = storage.attack(username, pointFromString(cmdName));
+            String opponent = storage.getOpponent(username);
+            if(opponent != null){
+                addResponse(opponent,storage.getGameOutput(opponent),storage.getChannel(opponent));
             }
         }
-        return response + System.lineSeparator() + storage.getUserStatus(command.getUsername()).getPrompt();
+        addResponse(username, response, channel);
     }
 
     private Point pointFromString(String coordinates) {
@@ -61,9 +80,9 @@ public class CommandExecutor implements Executor {
         String[] cmdArguments = command.getArguments();
         String username = command.getUsername();
         return switch (cmdName) {
-            case "login" -> login(username,channel);
+            case "login" -> login(username, channel);
             case "logout" -> logout(username);
-            case "create-game" -> createGame(username,cmdArguments);
+            case "create-game" -> createGame(username, cmdArguments);
             case "list-games" -> listGames(username);
             case "join-game" -> joinGame(username, cmdArguments);
             case "start" -> start(username);
@@ -76,7 +95,7 @@ public class CommandExecutor implements Executor {
     }
 
     //Command logic methods
-    String login(String username, SocketChannel channel){
+    String login(String username, SocketChannel channel) {
         if (storage.isRegisteredUser(username)) {
             return Message.ALREADY_REGISTERED.toString();
         } else {
@@ -89,7 +108,8 @@ public class CommandExecutor implements Executor {
         storage.setUserStatus(username, UserStatus.IN_MAIN_MENU);
         return Message.SUCCESSFUL_LOGIN.toString();
     }
-    String logout(String username){
+
+    String logout(String username) {
         if (storage.isLoggedInUser(username)) {
             storage.logOutUser(username);
             storage.setUserStatus(username, UserStatus.OFFLINE);
@@ -97,7 +117,8 @@ public class CommandExecutor implements Executor {
         }
         return Message.NOT_LOGGED_IN.toString();
     }
-    String createGame(String username, String[] cmdArguments){
+
+    String createGame(String username, String[] cmdArguments) {
         if (storage.isUserInGame(username)) {
             return Message.NOT_ALLOWED.toString();
         }
@@ -107,34 +128,44 @@ public class CommandExecutor implements Executor {
         Board board = new Board(username, cmdArguments[0]);
         storage.addGame(cmdArguments[0], board);
         storage.joinAGame(username, cmdArguments[0], getShipsFromArgument(cmdArguments));
+        //TODO ship validation
         storage.setUserStatus(username, UserStatus.IN_GAME);
-        return Message.GAME_SUCCESSFULLY_CREATED.toString();
+        return "Created game " + board.getName() + ", players " + board.getNumberOfPlayers() + "/2";
     }
-    String listGames(String username){
+
+    String listGames(String username) {
         if (storage.isUserInGame(username)) {
             return Message.NOT_ALLOWED.toString();
         }
         return gamesTable(storage.getGames());
     }
-    String joinGame(String username, String[] cmdArguments){
+
+    String joinGame(String username, String[] cmdArguments) {
         if (storage.getUserStatus(username) == UserStatus.IN_GAME || storage.getUserStatus(username) == UserStatus.PLAYING) {
             return Message.NOT_ALLOWED.toString();
         }
-        if (!storage.containsGameName(cmdArguments[0])) {
+        String gameName = cmdArguments[0];
+        if (!storage.containsGameName(gameName)) {
             return Message.GAME_DO_NOT_EXIST.toString();
         }
-        storage.joinAGame(username, cmdArguments[0], getShipsFromArgument(cmdArguments));
+        storage.joinAGame(username, gameName, getShipsFromArgument(cmdArguments));
         storage.setUserStatus(username, UserStatus.IN_GAME);
-        return "SUCCESFul join";
+        String opponent = storage.getOpponent(username);
+        if (opponent != null) {
+            addResponse(username, username + " joined the game.", storage.getChannel(opponent));
+        }
+        return "Successfully joined a game " + gameName;
     }
-    String start(String username){
+
+    String start(String username) {
         if (storage.getUserStatus(username) != UserStatus.IN_GAME) {
             return Message.NOT_ALLOWED.toString();
         }
         storage.setUserStatus(username, UserStatus.PLAYING);
         return "You are in game";
     }
-    String exit(String username){
+
+    String exit(String username) {
         if (!storage.isUserInGame(username)) {
             return Message.NOT_ALLOWED.toString();
         }
@@ -142,13 +173,14 @@ public class CommandExecutor implements Executor {
         storage.setUserStatus(username, UserStatus.IN_MAIN_MENU);
         return Message.GAME_LEFT.toString();
     }
-    String saveGame(String username){
+
+    String saveGame(String username) {
         if (storage.getUserStatus(username) != UserStatus.PLAYING) {
             return Message.NOT_ALLOWED.toString();
         }
         String firstPlayer = storage.getGameByName(storage.getCurrentGame(username)).getCreator();
         String secondPlayer = storage.getGameByName(storage.getCurrentGame(username)).getOpponent();
-        if(firstPlayer == null || secondPlayer == null){
+        if (firstPlayer == null || secondPlayer == null) {
             return "can't save game before start";
         }
         fileHandler.saveGame(username);
@@ -159,19 +191,21 @@ public class CommandExecutor implements Executor {
         storage.removeGame(storage.getCurrentGame(username));
         return "game saved";
     }
-    String savedGames(String username){
+
+    String savedGames(String username) {
         if (storage.getUserStatus(username) == UserStatus.IN_MAIN_MENU) {
             return storage.getSavedGames(username).stream().collect(Collectors.joining(System.lineSeparator()));
         }
         return Message.NOT_ALLOWED.toString();
     }
+
     String loadGame(String username, String[] cmdArguments) {
         if (storage.getUserStatus(username) != UserStatus.IN_MAIN_MENU) {
             return Message.NOT_ALLOWED.toString();
         }
         fileHandler.loadGame(storage.getSavedGame(username, cmdArguments[0]));
-        storage.setUserStatus(username,UserStatus.IN_GAME);
-        storage.continuePlaying(username,cmdArguments[0]);
+        storage.setUserStatus(username, UserStatus.IN_GAME);
+        storage.continuePlaying(username, cmdArguments[0]);
         return "successfully loaded game";
     }
 
