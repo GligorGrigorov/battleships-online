@@ -1,72 +1,56 @@
-import bg.uni.sofia.fmi.mjt.battleships.commands.Command;
-import bg.uni.sofia.fmi.mjt.battleships.commands.CommandExecutor;
+import bg.uni.sofia.fmi.mjt.battleships.commands.*;
 import bg.uni.sofia.fmi.mjt.battleships.files.FileHandler;
-import bg.uni.sofia.fmi.mjt.battleships.game.Board;
-import bg.uni.sofia.fmi.mjt.battleships.game.Table;
+import bg.uni.sofia.fmi.mjt.battleships.game.Game;
 import bg.uni.sofia.fmi.mjt.battleships.server.Pair;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.io.IOException;
+import org.junit.Assert;
 import java.nio.channels.SocketChannel;
-import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 public class CommandExecutorTest {
 
+    private static final String USERNAME = "test123";
+
     private Storage storage;
     private SocketChannel channel;
-    private CommandExecutor cmdExecutor;
+    private Executor cmdExecutor;
     private Command command;
+    private FileHandler handler;
+    private Queue<Pair> responses;
 
+    private String splitResponse(String input) {
+        return input.split(System.lineSeparator())[0];
+    }
     @Before
     public void setUp() {
         storage = mock(Storage.class);
         command = mock(Command.class);
-        try {
-            channel = SocketChannel.open();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        cmdExecutor = new CommandExecutor(storage,new FileHandler(Path.of("test"), storage), new LinkedList<Pair>());
+        handler = mock(FileHandler.class);
+        channel = mock(SocketChannel.class);
+        responses = new LinkedList<>();
+        cmdExecutor = new CommandExecutor(storage,handler, responses);
     }
 
     @Test
-    public void CreateGameTest(){
-        String username = "gligor";
-        when(storage.isUserInGame(username)).thenReturn(false);
-        when(storage.containsGameName("first-game")).thenReturn(false);
-        when(storage.containsGame(any())).thenReturn(true);
-        when(command.getUsername()).thenReturn("gligor");
-        when(command.getArguments()).thenReturn(new String[]{"first-game", "A2,A3", "B1,B4", "B3,B8", "C4,C8", "D2,D4"});
-        when(command.getName()).thenReturn("create-game");
-        //assertEquals("game successfully created",cmdExecutor.executeCommand(command,channel));
+    public void testLogin(){
+        String request = "login " + USERNAME;
+        when(command.getName()).thenReturn("login");
+        when(command.getArguments()).thenReturn(new String[]{});
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.isRegisteredUser(USERNAME)).thenReturn(false);
+        when(storage.isLoggedInUser(USERNAME)).thenReturn(false);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.IN_MAIN_MENU);
+        cmdExecutor.executeCommand(command,channel);
+        String response = splitResponse(responses.peek().response().toString());
+        SocketChannel channel = responses.peek().channel();
+        Assert.assertEquals(this.channel,channel);
+        Assert.assertEquals(Message.SUCCESSFUL_LOGIN.toString(),response);
     }
-
-    @Test
-    public void ListGamesTest(){
-        String username = "gligor";
-        when(storage.isUserInGame(username)).thenReturn(false);
-        Set<Board> boards = new HashSet<>();
-        Board b1 = mock(Board.class);
-        when(b1.getCreator()).thenReturn(username);
-        when(b1.getName()).thenReturn("test-game");
-        boards.add(b1);
-        when(storage.getGames()).thenReturn(boards);
-        when(command.getUsername()).thenReturn("gligor");
-        when(command.getArguments()).thenReturn(new String[0]);
-        when(command.getName()).thenReturn("list-games");
-       // assertEquals("game successfully created",cmdExecutor.executeCommand(command,channel));
-    }
-
 }
