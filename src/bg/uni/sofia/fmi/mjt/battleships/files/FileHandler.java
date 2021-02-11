@@ -1,6 +1,6 @@
 package bg.uni.sofia.fmi.mjt.battleships.files;
 
-import bg.uni.sofia.fmi.mjt.battleships.game.Board;
+import bg.uni.sofia.fmi.mjt.battleships.game.Game;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
 
 import java.io.EOFException;
@@ -45,7 +45,7 @@ public class FileHandler {
     }
 
     public void saveGame(String username) {
-        Board game = storage.getGameByName(storage.getCurrentGame(username));
+        Game game = storage.getGameByName(storage.getCurrentGame(username));
         Path gamePath = Path.of(dirPath.toString(), game.getCreator() + "_" + game.getName() + ".bin");
         Path gamePath2 = Path.of(dirPath.toString(), game.getOpponent() + "_" + game.getName() + ".bin");
         storage.addSavedGame(game.getCreator(), game.getName(), gamePath);
@@ -66,7 +66,7 @@ public class FileHandler {
         try (var objectInputStream = new ObjectInputStream(Files.newInputStream(path))) {
             Object gameObject;
             while ((gameObject = objectInputStream.readObject()) != null) {
-                Board game = (Board) gameObject;
+                Game game = (Game) gameObject;
                 storage.addGame(game.getName(), game);
                 Files.delete(path);
             }

@@ -2,33 +2,28 @@ package bg.uni.sofia.fmi.mjt.battleships.game;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-public class Board implements Serializable {
+public class Game implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 134948039702643492L;
 
-    //Map<String, Table> tables;
     private final Table[] tables;
     private final String[] names;
     private final String creator;
     private final String gameName;
     private int numberOfPlayers;
-    private int balance;
+    private String nextToPlay;
     private Status status;
     private int winner;
 
-    public Board(String creator, String gameName) {
+    public Game(String creator, String gameName) {
         this.tables = new Table[2];
         this.names = new String[2];
-        //tables = new HashMap<>();
         this.creator = creator;
         this.gameName = gameName;
         this.numberOfPlayers = 0;
-        this.balance = 0;
+        nextToPlay = creator;
         this.status = Status.PENDING;
         winner = -1;
     }
@@ -41,12 +36,7 @@ public class Board implements Serializable {
         return numberOfPlayers;
     }
 
-    public boolean isFull() {
-        return numberOfPlayers >= 2;
-    }
-
     public void addPlayer(String name, Table table) {
-        //tables.put(name,table);
         tables[numberOfPlayers] = table;
         names[numberOfPlayers] = name;
         numberOfPlayers++;
@@ -56,7 +46,7 @@ public class Board implements Serializable {
     }
 
     public void surrender(String username) {
-        if (names[0].equals(username)) {
+        if(username.equals(creator)){
             winner = 1;
         }
         if (names[1].equals(username)) {
@@ -72,38 +62,35 @@ public class Board implements Serializable {
         }
         if (status == Status.FINISHED) {
             if (username.equals(names[0])) {
-                return winner == 0 ? "WIN" : "LOST";
+                return winner == 0 ? "WIN" : "DEFEAT";
             }
             if (username.equals(names[1])) {
-                return winner == 1 ? "WIN" : "LOST";
+                return winner == 1 ? "WIN" : "DEFEAT";
             }
         }
-        if (tables[0].getShipCellsRemaining() == 0 && tables[1].getShipCellsRemaining() == 0) {
-            return "Unresolved";
-        }
-        if (username.equals(names[0]) && balance < 1) {
+        if (username.equals(names[0]) && username.equals(nextToPlay)) {
             tables[1].attack(point);
-            balance++;
+            nextToPlay = names[1];
             if (tables[0].getShipCellsRemaining() == 0) {
-                return "you lose";
+                return "DEFEAT";
             }
             if (tables[1].getShipCellsRemaining() == 0) {
-                return "you win";
+                return "WIN";
             }
             return getCreatorOutput();
         }
-        if (username.equals(names[1]) && balance > -1) {
+        if (username.equals(names[1]) && username.equals(nextToPlay)) {
             tables[0].attack(point);
-            balance--;
+            nextToPlay = names[0];
             if (tables[1].getShipCellsRemaining() == 0) {
-                return "you lose";
+                return "DEFEAT";
             }
             if (tables[0].getShipCellsRemaining() == 0) {
-                return "you win";
+                return "WIN";
             }
             return getOpponentOutput();
         }
-        return "error while attacking";
+        return "not your turn";
     }
 
     public String getOpponent() {
@@ -127,12 +114,16 @@ public class Board implements Serializable {
     }
 
     public String getOutput(String username) {
+        Table table = null;
         if (username.equals(names[0])) {
-            return getCreatorOutput();
+            table = tables[0];
         }
         if (username.equals(names[1])) {
-            return getOpponentOutput();
+            table = tables[1];
         }
-        return "wrong username in get output";
+        if(table == null){
+            return "error loading tables";
+        }
+        return table.toString(false) + tables[1].toString(true);
     }
 }

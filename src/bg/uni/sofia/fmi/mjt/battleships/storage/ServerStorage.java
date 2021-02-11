@@ -1,9 +1,8 @@
 package bg.uni.sofia.fmi.mjt.battleships.storage;
 
 import bg.uni.sofia.fmi.mjt.battleships.commands.UserStatus;
-import bg.uni.sofia.fmi.mjt.battleships.game.Board;
+import bg.uni.sofia.fmi.mjt.battleships.game.Game;
 import bg.uni.sofia.fmi.mjt.battleships.game.Point;
-import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
 import bg.uni.sofia.fmi.mjt.battleships.game.Table;
 
 import java.nio.channels.SocketChannel;
@@ -15,7 +14,7 @@ public class ServerStorage implements Storage {
     private final Map<String, SocketChannel> loggedInUsers;
     private final Map<SocketChannel, String> userOnChannel;
     private final Set<String> registeredUsers;
-    private final Map<String, Board> games;
+    private final Map<String, Game> games;
     private final Map<String, String> inGameUsers;
     private final Map<String, UserStatus> userStatusMap;
     private final Map<String, Map<String, Path>> savedGames;
@@ -68,7 +67,7 @@ public class ServerStorage implements Storage {
     }
 
     @Override
-    public Collection<Board> getGames() {
+    public Collection<Game> getGames() {
         return games.values();
     }
 
@@ -88,8 +87,8 @@ public class ServerStorage implements Storage {
     }
 
     @Override
-    public void addGame(String name, Board board) {
-        games.put(name, board);
+    public void addGame(String name, Game game) {
+        games.put(name, game);
     }
 
     @Override
@@ -107,14 +106,14 @@ public class ServerStorage implements Storage {
     }
 
     @Override
-    public Board getGameByName(String name) {
+    public Game getGameByName(String name) {
         return games.get(name);
     }
 
     @Override
     public void leaveGameWithoutSaving(String username) {
         String gameName = inGameUsers.get(username);
-        if (games.get(gameName).getNumberOfPlayers() == 0) {
+        if (games.get(gameName).getNumberOfPlayers() == 1) {
             games.remove(gameName);
         } else {
             games.get(inGameUsers.get(username)).surrender(username);
@@ -124,7 +123,7 @@ public class ServerStorage implements Storage {
 
     @Override
     public String getGameOutput(String username) {
-        Board game = games.get(inGameUsers.get(username));
+        Game game = games.get(inGameUsers.get(username));
         if(game == null) {
             return null;
             //TODO try using exceptions
@@ -183,7 +182,7 @@ public class ServerStorage implements Storage {
 
     @Override
     public String getOpponent(String username) {
-        Board game = getGameByName(getCurrentGame(username));
+        Game game = getGameByName(getCurrentGame(username));
         if(game == null){
             return null;
         }

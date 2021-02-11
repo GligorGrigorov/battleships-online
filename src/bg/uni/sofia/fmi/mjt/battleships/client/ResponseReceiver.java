@@ -2,7 +2,6 @@ package bg.uni.sofia.fmi.mjt.battleships.client;
 
 import bg.uni.sofia.fmi.mjt.battleships.commands.Message;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;

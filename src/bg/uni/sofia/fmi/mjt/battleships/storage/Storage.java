@@ -1,9 +1,8 @@
 package bg.uni.sofia.fmi.mjt.battleships.storage;
 
 import bg.uni.sofia.fmi.mjt.battleships.commands.UserStatus;
-import bg.uni.sofia.fmi.mjt.battleships.game.Board;
+import bg.uni.sofia.fmi.mjt.battleships.game.Game;
 import bg.uni.sofia.fmi.mjt.battleships.game.Point;
-import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
 import bg.uni.sofia.fmi.mjt.battleships.game.Table;
 
 import java.nio.channels.SocketChannel;
@@ -27,7 +26,7 @@ public interface Storage {
 
     Set<String> getGameNames();
 
-    Collection<Board> getGames();
+    Collection<Game> getGames();
 
     boolean containsGameName(String name);
 
@@ -35,13 +34,13 @@ public interface Storage {
 
     boolean isUserInGame(String username);
 
-    void addGame(String name, Board board);
+    void addGame(String name, Game game);
 
     void joinAGame(String username, String gameName, Table table);
 
     String getCurrentGame(String username);
 
-    Board getGameByName(String name);
+    Game getGameByName(String name);
 
     void leaveGameWithoutSaving(String username);
 
