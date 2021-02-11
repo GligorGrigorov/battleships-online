@@ -4,6 +4,7 @@ import bg.uni.sofia.fmi.mjt.battleships.commands.UserStatus;
 import bg.uni.sofia.fmi.mjt.battleships.game.Board;
 import bg.uni.sofia.fmi.mjt.battleships.game.Point;
 import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
+import bg.uni.sofia.fmi.mjt.battleships.game.Table;
 
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
@@ -36,7 +37,7 @@ public interface Storage {
 
     void addGame(String name, Board board);
 
-    void joinAGame(String username, String gameName, Ship[] ships);
+    void joinAGame(String username, String gameName, Table table);
 
     String getCurrentGame(String username);
 

@@ -3,10 +3,10 @@ package bg.uni.sofia.fmi.mjt.battleships.commands;
 import java.util.Arrays;
 
 public enum Commands {
-    CREATE_GAME("create-game", 6),
+    CREATE_GAME("create-game", 11),
     LOGIN("login", 0),
     LOGOUT("logout", 0),
-    JOIN_GAME("join-game", 6),
+    JOIN_GAME("join-game", 11),
     LIST_GAMES("list-games", 0),
     EXIT_GAME("exit", 0),
     START("start", 0),

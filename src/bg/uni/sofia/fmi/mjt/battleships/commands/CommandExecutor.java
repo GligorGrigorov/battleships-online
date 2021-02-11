@@ -1,17 +1,20 @@
 package bg.uni.sofia.fmi.mjt.battleships.commands;
 
+import bg.uni.sofia.fmi.mjt.battleships.exceptions.IllegalShipCoordinateException;
+import bg.uni.sofia.fmi.mjt.battleships.exceptions.ShipCreationException;
+import bg.uni.sofia.fmi.mjt.battleships.exceptions.TableCreationException;
+import bg.uni.sofia.fmi.mjt.battleships.exceptions.WrongNumberOFShipsException;
 import bg.uni.sofia.fmi.mjt.battleships.files.FileHandler;
 import bg.uni.sofia.fmi.mjt.battleships.game.Board;
 import bg.uni.sofia.fmi.mjt.battleships.game.Point;
 import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
+import bg.uni.sofia.fmi.mjt.battleships.game.Table;
 import bg.uni.sofia.fmi.mjt.battleships.server.Pair;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
 
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Queue;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CommandExecutor implements Executor {
@@ -59,20 +62,6 @@ public class CommandExecutor implements Executor {
         int row = coordinates.charAt(0) - 'A' + 1;
         int column = Integer.parseInt(coordinates.substring(1));
         return new Point(column, row);
-    }
-
-    private boolean isValidCoordinate(String coordinate) {
-        if (coordinate.length() != 2) {
-            return false;
-        }
-        char row = coordinate.charAt(0);
-        int column;
-        try {
-            column = Integer.parseInt(coordinate.substring(1));
-        } catch (NumberFormatException e) {
-            return false;
-        }
-        return row >= 'A' && row <= 'J' && column >= 1 && column <= 10;
     }
 
     String processMainCommands(Command command, SocketChannel channel) {
@@ -127,7 +116,19 @@ public class CommandExecutor implements Executor {
         }
         Board board = new Board(username, cmdArguments[0]);
         storage.addGame(cmdArguments[0], board);
-        storage.joinAGame(username, cmdArguments[0], getShipsFromArgument(cmdArguments));
+        Ship[] ships;
+        try {
+            ships = getShipsFromArgument(cmdArguments);
+        } catch (ShipCreationException e) {
+            return e.getMessage();
+        }
+        Table table;
+        try {
+            table = new Table(ships);
+        } catch (TableCreationException e) {
+            return e.getMessage();
+        }
+        storage.joinAGame(username, cmdArguments[0], table);
         //TODO ship validation
         storage.setUserStatus(username, UserStatus.IN_GAME);
         return "Created game " + board.getName() + ", players " + board.getNumberOfPlayers() + "/2";
@@ -148,7 +149,20 @@ public class CommandExecutor implements Executor {
         if (!storage.containsGameName(gameName)) {
             return Message.GAME_DO_NOT_EXIST.toString();
         }
-        storage.joinAGame(username, gameName, getShipsFromArgument(cmdArguments));
+        Ship[] ships;
+        try {
+            ships = getShipsFromArgument(cmdArguments);
+        } catch (ShipCreationException e) {
+            return e.getMessage();
+        }
+        //storage.joinAGame(username, cmdArguments[0], ships);
+        Table table;
+        try {
+            table = new Table(ships);
+        } catch (TableCreationException e) {
+            return e.getMessage();
+        }
+        storage.joinAGame(username, gameName, table);
         storage.setUserStatus(username, UserStatus.IN_GAME);
         String opponent = storage.getOpponent(username);
         if (opponent != null) {
@@ -227,16 +241,60 @@ public class CommandExecutor implements Executor {
                 .collect(Collectors.joining(""));
     }
 
-    private Ship[] getShipsFromArgument(String[] arguments) {
-        Ship[] ships = new Ship[5];
-        if (arguments.length == 6) {
+    private boolean isValidCoordinate(String coordinate) {
+        if (coordinate.length() < 2) {
+            return false;
+        }
+        char row = coordinate.charAt(0);
+        int column;
+        try {
+            column = Integer.parseInt(coordinate.substring(1));
+        } catch (NumberFormatException e) {
+            return false;
+        }
+        return row >= 'A' && row <= 'J' && column >= 1 && column <= 10;
+    }
+    private boolean isValidSegmentOrientation(Point p1, Point p2) {
+        return p1.x() == p2.x() || p1.y() == p2.y();
+    }
+    private int getSegmentLength(Point p1, Point p2) {
+        return (int) Math.round(Math.sqrt((p1.x() - p2.x()) * (p1.x() - p2.x()) + (p1.y() - p2.y()) * (p1.y() - p2.y()))) + 1;
+    }
+    private Ship[] getShipsFromArgument(String[] arguments) throws ShipCreationException {
+        int shipsNumber = 10;
+        Ship[] ships = new Ship[shipsNumber];
+        Map<Integer,Integer> remainingShips = new HashMap<>();
+        remainingShips.put(5,1);
+        remainingShips.put(4,2);
+        remainingShips.put(3,3);
+        remainingShips.put(2,4);
+        if (arguments.length == shipsNumber + 1) {
             for (int i = 1; i < arguments.length; i++) {
                 String[] tokens = arguments[i].split(",");
                 String first = tokens[0];
                 String second = tokens[1];
-                ships[i - 1] = new Ship(new Point(first.charAt(1) - '0', first.charAt(0) - 'A' + 1),
-                        new Point(second.charAt(1) - '0', second.charAt(0) - 'A' + 1));
+                if(!isValidCoordinate(first) || !isValidCoordinate(second)){
+                    throw new IllegalShipCoordinateException("Wrong ship coordinates" + first + " " + second);
+                }
+                Point p1 = new Point(Integer.parseInt(first.substring(1)), first.charAt(0) - 'A' + 1);
+                Point p2 = new Point(Integer.parseInt(second.substring(1)), second.charAt(0) - 'A' + 1);
+                if(!isValidSegmentOrientation(p1,p2)) {
+                    throw new IllegalShipCoordinateException("Ships can't go diagonal");
+                }
+                int shipLength = getSegmentLength(p1,p2);
+                if(!remainingShips.containsKey(shipLength)){
+                    throw new IllegalShipCoordinateException("Ship with " + shipLength + " length and " +
+                            "coordinates " + p1.toString() + " | " + p2.toString() + "  not available");
+                }
+                if(remainingShips.get(shipLength) == 0){
+                    throw new IllegalShipCoordinateException("No more ships available of this type");
+                }
+                int number = remainingShips.get(shipLength);
+                remainingShips.put(shipLength, number - 1);
+                ships[i - 1] = new Ship(p1,p2);
             }
+        } else {
+            throw new WrongNumberOFShipsException("Number of ships must be " + shipsNumber);
         }
         return ships;
     }

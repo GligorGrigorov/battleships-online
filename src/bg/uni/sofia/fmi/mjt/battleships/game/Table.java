@@ -1,5 +1,7 @@
 package bg.uni.sofia.fmi.mjt.battleships.game;
 
+import bg.uni.sofia.fmi.mjt.battleships.exceptions.TableCreationException;
+
 import java.io.Serial;
 import java.io.Serializable;
 
@@ -10,7 +12,7 @@ public class Table implements Serializable {
     private int shipCellsCount;
     private Point lastAttack;
 
-    public Table(Ship[] ships) {
+    public Table(Ship[] ships) throws TableCreationException {
         cells = new Cells[10][10];
         shipCellsCount = 0;
         lastAttack = null;
@@ -24,12 +26,18 @@ public class Table implements Serializable {
             Point p2 = ship.b();
             if (p1.x() == p2.x()) {
                 for (int j = Math.min(p1.y(), p2.y()) - 1; j < Math.max(p1.y(), p2.y()); j++) {
+                    if(cells[j][p1.x() - 1] == Cells.SHIP) {
+                        throw new TableCreationException("Ships can't overlap");
+                    }
                     cells[j][p1.x() - 1] = Cells.SHIP;
                     shipCellsCount++;
                 }
             }
             if (p1.y() == p2.y()) {
                 for (int j = Math.min(p1.x(), p2.x()) - 1; j < Math.max(p1.x(), p2.x()); j++) {
+                    if(cells[p1.y() - 1][j] == Cells.SHIP) {
+                        throw new TableCreationException("Ships can't overlap");
+                    }
                     cells[p1.y() - 1][j] = Cells.SHIP;
                     shipCellsCount++;
                 }

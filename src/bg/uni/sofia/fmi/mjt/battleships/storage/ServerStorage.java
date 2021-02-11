@@ -93,9 +93,9 @@ public class ServerStorage implements Storage {
     }
 
     @Override
-    public void joinAGame(String username, String gameName, Ship[] ships) {
+    public void joinAGame(String username, String gameName, Table table) {
         inGameUsers.put(username, gameName);
-        games.get(gameName).addPlayer(username, new Table(ships));
+        games.get(gameName).addPlayer(username, table);
     }
 
     @Override
