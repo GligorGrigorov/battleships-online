@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class ClientThread extends Thread {
 
@@ -27,15 +25,14 @@ public class ClientThread extends Thread {
         try (SocketChannel socketChannel = SocketChannel.open();
              Scanner scanner = new Scanner(System.in)) {
             socketChannel.connect(new InetSocketAddress(serverHost, serverPort));
-            List<String> configInputs = new ArrayList<>();
+            Queue<String> configInputs = new LinkedList<>();
+            Thread receiver = new Thread(new ResponseReceiver(socketChannel, configInputs));
             configInputs.add("login");
-            Thread receiver = new Thread(new ResponseReceiver(socketChannel));
             receiver.start();
-            int i = 0;
             do {
                 String message;
-                if (i < configInputs.size()) {
-                    message = configInputs.get(i);
+                if (configInputs.size() > 0) {
+                    message = configInputs.poll();
                 } else {
                     if(scanner.hasNext()){
                         message = scanner.nextLine();
@@ -43,13 +40,13 @@ public class ClientThread extends Thread {
                         break;
                     }
                 }
-                i++;
                 message = message + " " + username + System.lineSeparator();
                 BUFFER.clear();
                 BUFFER.put(message.getBytes());
                 BUFFER.flip();
                 socketChannel.write(BUFFER);
             } while (receiver.isAlive());
+            System.out.println("Closing game client...");
         } catch (IOException e) {
             System.err.print("IO exception was thrown: " + e.getMessage());
             e.printStackTrace();
