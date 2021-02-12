@@ -42,7 +42,7 @@ public interface Storage {
 
     Game getGameByName(String name);
 
-    void leaveGameWithoutSaving(String username);
+    String leaveGameWithoutSaving(String username);
 
     String getGameOutput(String username);
 

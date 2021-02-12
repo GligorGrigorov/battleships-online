@@ -1,6 +1,8 @@
 package bg.uni.sofia.fmi.mjt.battleships.storage;
 
 import bg.uni.sofia.fmi.mjt.battleships.commands.UserStatus;
+import bg.uni.sofia.fmi.mjt.battleships.exceptions.GameNotAvailableException;
+import bg.uni.sofia.fmi.mjt.battleships.exceptions.PlayerNotAvailableException;
 import bg.uni.sofia.fmi.mjt.battleships.game.Game;
 import bg.uni.sofia.fmi.mjt.battleships.game.Point;
 import bg.uni.sofia.fmi.mjt.battleships.game.Table;
@@ -99,34 +101,43 @@ public class ServerStorage implements Storage {
 
     @Override
     public String getCurrentGame(String username) {
-        if(!inGameUsers.containsKey(username)) {
+        if (!inGameUsers.containsKey(username)) {
             return null;
         }
         return inGameUsers.get(username);
     }
 
     @Override
-    public Game getGameByName(String name) {
+    public Game getGameByName(String name) throws GameNotAvailableException {
+        if (!games.containsKey(name)) {
+            throw new GameNotAvailableException("Game not available");
+        }
         return games.get(name);
     }
 
     @Override
-    public void leaveGameWithoutSaving(String username) {
+    public String leaveGameWithoutSaving(String username) {
         String gameName = inGameUsers.get(username);
-        if (games.get(gameName).getNumberOfPlayers() == 1) {
-            games.remove(gameName);
-        } else {
-            games.get(inGameUsers.get(username)).surrender(username);
-        }
+        Game game = games.get(inGameUsers.get(username));
+        game.surrender(username);
+        String output = game.getOutput(username);
+        setUserStatus(username,UserStatus.IN_MAIN_MENU);
         inGameUsers.remove(username);
+        if(game.getNumberOfPlayers() == 0) {
+            removeGame(gameName);
+        }
+        return output;
     }
 
     @Override
     public String getGameOutput(String username) {
-        Game game = games.get(inGameUsers.get(username));
+        String user = inGameUsers.get(username);
+        if(user == null) {
+            return "USEr is null";
+        }
+        Game game = games.get(user);
         if(game == null) {
-            return null;
-            //TODO try using exceptions
+            return "GAme is null";
         }
         return games.get(inGameUsers.get(username)).getOutput(username);
     }
@@ -147,9 +158,9 @@ public class ServerStorage implements Storage {
     }
 
     @Override
-    public void addSavedGame(String username, String gameName ,Path filePath) {
+    public void addSavedGame(String username, String gameName, Path filePath) {
         savedGames.computeIfAbsent(username, k -> new HashMap<>());
-        savedGames.get(username).put(gameName,filePath);
+        savedGames.get(username).put(gameName, filePath);
     }
 
     @Override
@@ -164,7 +175,7 @@ public class ServerStorage implements Storage {
 
     @Override
     public Collection<String> getSavedGames(String username) {
-        if(savedGames.get(username) == null){
+        if (savedGames.get(username) == null) {
             return new HashSet<>();
         }
         return savedGames.get(username).keySet();
@@ -172,7 +183,7 @@ public class ServerStorage implements Storage {
 
     @Override
     public void continuePlaying(String username, String gameName) {
-        inGameUsers.put(username,gameName);
+        inGameUsers.put(username, gameName);
     }
 
     @Override
@@ -181,11 +192,15 @@ public class ServerStorage implements Storage {
     }
 
     @Override
-    public String getOpponent(String username) {
+    public String getOpponent(String username) throws PlayerNotAvailableException {
         Game game = getGameByName(getCurrentGame(username));
-        if(game == null){
+        if (game == null) {
             return null;
         }
-        return game.getOpponent().equals(username) ? game.getCreator() : game.getOpponent();
+        try {
+            return game.getOpponent().equals(username) ? game.getCreator() : game.getOpponent();
+        } catch (RuntimeException e) {
+            throw new PlayerNotAvailableException("Opponent not available.");
+        }
     }
 }

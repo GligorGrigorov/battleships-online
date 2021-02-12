@@ -5,12 +5,28 @@ import bg.uni.sofia.fmi.mjt.battleships.commands.Message;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Queue;
+import java.util.Set;
 
-public record ResponseReceiver(SocketChannel channel, Queue<String> configInputs) implements Runnable {
+public class ResponseReceiver implements Runnable {
 
     private static final ByteBuffer BUFFER = ByteBuffer.allocateDirect(2048);
     private static final String EXIT_MESSAGE = "Enter some text to close.";
+
+    private final Set<String> gameExitResponses;
+    private final Set<String> clientExitResponses;
+    private final SocketChannel channel;
+    private final Queue<String> configRequests;
+    public ResponseReceiver(SocketChannel channel, Queue<String> configRequests) {
+        gameExitResponses = new HashSet<>();
+        clientExitResponses = new HashSet<>();
+        this.channel = channel;
+        this.configRequests = configRequests;
+        clientExitResponses.add(Message.ALREADY_REGISTERED.toString());
+        clientExitResponses.add(Message.ALREADY_LOGGED_IN.toString());
+        clientExitResponses.add(Message.SUCCESSFUL_LOGOUT.toString());
+    }
     @Override
     public void run() {
         while (true) {
@@ -27,23 +43,12 @@ public record ResponseReceiver(SocketChannel channel, Queue<String> configInputs
             String reply = new String(byteArray, StandardCharsets.UTF_8);
             System.out.print(reply);
             reply = reply.split(System.lineSeparator())[0];
-            if(reply.equals("WIN")){
-                System.out.println(EXIT_MESSAGE);
-                configInputs.add("exit");
+            if(gameExitResponses.contains(reply)){
+                configRequests.add("exit");
             }
-            if (reply.equals(Message.ALREADY_REGISTERED.toString())) {
+            if (clientExitResponses.contains(reply)) {
                 System.out.println(EXIT_MESSAGE);
-                configInputs.add("logout");
-                break;
-            }
-            if (reply.equals(Message.ALREADY_LOGGED_IN.toString())) {
-                System.out.println(EXIT_MESSAGE);
-                configInputs.add("logout");
-                break;
-            }
-            if (reply.equals(Message.SUCCESSFUL_LOGOUT.toString())) {
-                System.out.println(EXIT_MESSAGE);
-                configInputs.add("logout");
+                configRequests.add("logout");
                 break;
             }
         }

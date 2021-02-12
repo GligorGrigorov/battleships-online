@@ -15,7 +15,7 @@ public class Game implements Serializable {
     private int numberOfPlayers;
     private String nextToPlay;
     private Status status;
-    private int winner;
+    private String winner;
 
     public Game(String creator, String gameName) {
         this.tables = new Table[2];
@@ -25,7 +25,6 @@ public class Game implements Serializable {
         this.numberOfPlayers = 0;
         nextToPlay = creator;
         this.status = Status.PENDING;
-        winner = -1;
     }
 
     public Status getStatus() {
@@ -46,11 +45,14 @@ public class Game implements Serializable {
     }
 
     public void surrender(String username) {
+        if(status == Status.PENDING) {
+            return;
+        }
         if(username.equals(creator)){
-            winner = 1;
+            winner = names[1];
         }
         if (names[1].equals(username)) {
-            winner = 0;
+            winner = names[0];
         }
         status = Status.FINISHED;
         numberOfPlayers--;
@@ -61,12 +63,10 @@ public class Game implements Serializable {
             return "waiting for players";
         }
         if (status == Status.FINISHED) {
-            if (username.equals(names[0])) {
-                return winner == 0 ? "WIN" : "DEFEAT";
+            if (username.equals(winner)) {
+                return "WIN";
             }
-            if (username.equals(names[1])) {
-                return winner == 1 ? "WIN" : "DEFEAT";
-            }
+            return "DEFEAT";
         }
         if (username.equals(names[0]) && username.equals(nextToPlay)) {
             tables[1].attack(point);
@@ -106,23 +106,36 @@ public class Game implements Serializable {
     }
 
     public String getCreatorOutput() {
+        if(winner != null){
+            if(winner.equals(creator)){
+                return "WIN";
+            }
+        }
         return tables[0].toString(false) + tables[1].toString(true);
     }
 
     public String getOpponentOutput() {
+        if(winner != null){
+            if(winner.equals(creator)){
+                return "DEFEAT";
+            }
+        }
         return tables[1].toString(false) + tables[0].toString(true);
     }
 
     public String getOutput(String username) {
         Table table = null;
+        if(winner != null) {
+            return winner.equals(username) ? "WIN" : "DEFEAT";
+        }
         if (username.equals(names[0])) {
             table = tables[0];
         }
         if (username.equals(names[1])) {
             table = tables[1];
         }
-        if(table == null){
-            return "error loading tables";
+        if(table == null) {
+            return "Can't load table";
         }
         return table.toString(false) + tables[1].toString(true);
     }

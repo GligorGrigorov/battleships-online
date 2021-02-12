@@ -1,9 +1,6 @@
 package bg.uni.sofia.fmi.mjt.battleships.commands;
 
-import bg.uni.sofia.fmi.mjt.battleships.exceptions.IllegalShipCoordinateException;
-import bg.uni.sofia.fmi.mjt.battleships.exceptions.ShipCreationException;
-import bg.uni.sofia.fmi.mjt.battleships.exceptions.TableCreationException;
-import bg.uni.sofia.fmi.mjt.battleships.exceptions.WrongNumberOFShipsException;
+import bg.uni.sofia.fmi.mjt.battleships.exceptions.*;
 import bg.uni.sofia.fmi.mjt.battleships.files.FileHandler;
 import bg.uni.sofia.fmi.mjt.battleships.game.Game;
 import bg.uni.sofia.fmi.mjt.battleships.game.Point;
@@ -47,12 +44,19 @@ public class CommandExecutor implements Executor {
             response = processMainCommands(command, channel);
         } else if (isValidCoordinate(cmdName) && storage.getUserStatus(username) == UserStatus.PLAYING) {
             response = storage.attack(username, pointFromString(cmdName));
-            String opponent = storage.getOpponent(username);
-            if (opponent != null) {
-                String gameOutput = storage.getGameOutput(opponent);
-                if(gameOutput != null) {
-                    addResponse(opponent, storage.getGameOutput(opponent), storage.getChannel(opponent));
-                }
+            String opponent;
+            try {
+                opponent = storage.getOpponent(username);
+            } catch (PlayerNotAvailableException e) {
+                response = e.getMessage();
+                addResponse(username, response, channel);
+                return;
+            }
+            if(response.equals("WIN") || response.equals("DEFEAT")){
+                exit(username);
+                exit(opponent);
+            } else {
+                addResponse(opponent, storage.getGameOutput(opponent), storage.getChannel(opponent));
             }
         }
         addResponse(username, response, channel);
@@ -85,13 +89,10 @@ public class CommandExecutor implements Executor {
 
     //Command logic methods
     String login(String username, SocketChannel channel) {
-        if (storage.isRegisteredUser(username)) {
-            return Message.ALREADY_REGISTERED.toString();
+        if (storage.isRegisteredUser(username) && storage.isLoggedInUser(username)) {
+            return Message.ALREADY_LOGGED_IN.toString();
         } else {
             storage.registerUser(username);
-        }
-        if (storage.isLoggedInUser(username)) {
-            return Message.ALREADY_LOGGED_IN.toString();
         }
         storage.logInUser(username, channel);
         storage.setUserStatus(username, UserStatus.IN_MAIN_MENU);
@@ -181,9 +182,7 @@ public class CommandExecutor implements Executor {
         if (!storage.isUserInGame(username)) {
             return Message.NOT_ALLOWED.toString();
         }
-        storage.leaveGameWithoutSaving(username);
-        storage.setUserStatus(username, UserStatus.IN_MAIN_MENU);
-        return Message.GAME_LEFT.toString();
+        return storage.leaveGameWithoutSaving(username);
     }
 
     String saveGame(String username) {
