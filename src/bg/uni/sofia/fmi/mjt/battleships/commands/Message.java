@@ -9,11 +9,8 @@ public enum Message {
     NOT_ALLOWED("[ not allowed command ]"),
     GAME_EXISTS("[ game exists ]"),
     GAME_DO_NOT_EXIST("[ game don't exist ]"),
-    GAME_SUCCESSFULLY_CREATED("[ game successfully created ]"),
-    GAME_PROBLEM_IN_CREATION("[ problem creating this game ]"),
-    GAME_LEFT("[ successfully left the game ]"),
-    WRONG_COMMAND("[ wrong command ]"),
-    NOT_LOGGED_IN("[ not logged in ]");
+    WRONG_COMMAND("[ wrong command ]");
+
     private final String message;
 
     Message(String message) {
