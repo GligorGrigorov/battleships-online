@@ -1,5 +1,6 @@
 import bg.uni.sofia.fmi.mjt.battleships.exceptions.GameCapacityExceededException;
 import bg.uni.sofia.fmi.mjt.battleships.game.Game;
+import bg.uni.sofia.fmi.mjt.battleships.game.Point;
 import bg.uni.sofia.fmi.mjt.battleships.game.Table;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,5 +64,52 @@ public class GameTest {
         game.addPlayer(OPPONENT,table2);
         game.surrender(OPPONENT);
         assertEquals("WIN",game.getOutput(CREATOR));
+    }
+    @Test
+    public void testAttackWhenNotEnoughPlayers(){
+        game.addPlayer(CREATOR,table1);
+        assertEquals("waiting for players",game.attack(CREATOR,new Point(1,1)));
+    }
+    @Test
+    public void testAttackWhenAttackingUserIsDefeated(){
+        game.addPlayer(CREATOR,table1);
+        game.addPlayer(OPPONENT,table2);
+        when(table1.getShipCellsRemaining()).thenReturn(5);
+        when(table2.getShipCellsRemaining()).thenReturn(0);
+        String response = game.attack(OPPONENT,new Point(1,1));
+        assertEquals("DEFEAT",response);
+    }
+    @Test
+    public void testAttackWhenAttackingUserIsWinner(){
+        game.addPlayer(CREATOR,table1);
+        game.addPlayer(OPPONENT,table2);
+        when(table1.getShipCellsRemaining()).thenReturn(0);
+        when(table2.getShipCellsRemaining()).thenReturn(5);
+        String response = game.attack(OPPONENT,new Point(1,1));
+        assertEquals("WIN",response);
+    }
+    @Test
+    public void testAttackWhenWinnerDoNotExist(){
+        game.addPlayer(CREATOR,table1);
+        game.addPlayer(OPPONENT,table2);
+        when(table1.getShipCellsRemaining()).thenReturn(8);
+        String creatorSide = "ad";
+        when(table1.toString(false)).thenReturn("a");
+        when(table1.toString(true)).thenReturn("b");
+        when(table2.getShipCellsRemaining()).thenReturn(5);
+        String opponentSide = "cb";
+        when(table2.toString(false)).thenReturn("c");
+        when(table2.toString(true)).thenReturn("d");
+        String opponentResponse = game.attack(OPPONENT,new Point(1,1));
+        assertEquals(opponentSide,opponentResponse);
+        String creatorResponse = game.attack(CREATOR,new Point(1,1));
+        assertEquals(creatorSide,creatorResponse);
+    }
+    @Test
+    public void testAttackWhenNotYourTurn(){
+        game.addPlayer(CREATOR,table1);
+        game.addPlayer(OPPONENT,table2);
+        String creatorResponse = game.attack(CREATOR,new Point(1,1));
+        assertEquals("not your turn",creatorResponse);
     }
 }

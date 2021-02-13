@@ -90,10 +90,12 @@ public class Game implements Serializable {
             counter++;
             if (playerTable.get(username).getShipCellsRemaining() == 0) {
                 winner = opponent;
+                status = Status.FINISHED;
                 return "DEFEAT";
             }
             if (playerTable.get(opponent).getShipCellsRemaining() == 0) {
                 winner = username;
+                status = Status.FINISHED;
                 return "WIN";
             }
             return getOutput(username);
