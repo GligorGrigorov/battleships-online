@@ -37,7 +37,9 @@ public class GameServerThread extends Thread {
         responsesQueue = new LinkedList<>();
         executor = new CommandExecutor(storage, new FileHandler(Path.of(GAMES_FILENAME), storage), responsesQueue);
         sender = new ResponseSender(responsesQueue);
-        new Thread(sender).start();
+        Thread senderThread = new Thread(sender);
+        senderThread.setDaemon(true);
+        senderThread.start();
     }
 
     public void stopServer() {

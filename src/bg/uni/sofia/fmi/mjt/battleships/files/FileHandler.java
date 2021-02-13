@@ -40,7 +40,7 @@ public class FileHandler {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error reading from directory");
         }
     }
 
@@ -53,12 +53,12 @@ public class FileHandler {
         try (var objectOutputStream = new ObjectOutputStream(Files.newOutputStream(gamePath))) {
             objectOutputStream.writeObject(game);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error saving this game from player " + username);
         }
         try (var objectOutputStream = new ObjectOutputStream(Files.newOutputStream(gamePath2))) {
             objectOutputStream.writeObject(game);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error saving this game from player " + username);
         }
     }
 
@@ -72,7 +72,7 @@ public class FileHandler {
             }
         } catch (EOFException ignored) {
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            System.err.println("Error loading this game");
         }
     }
 }
