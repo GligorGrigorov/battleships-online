@@ -1,19 +1,14 @@
 import bg.uni.sofia.fmi.mjt.battleships.commands.*;
 import bg.uni.sofia.fmi.mjt.battleships.files.FileHandler;
-import bg.uni.sofia.fmi.mjt.battleships.game.Game;
 import bg.uni.sofia.fmi.mjt.battleships.server.Pair;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import java.nio.channels.SocketChannel;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.Set;
 
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 public class CommandExecutorTest {
@@ -64,7 +59,7 @@ public class CommandExecutorTest {
         when(command.getArguments()).thenReturn(new String[]{});
         when(command.getUsername()).thenReturn(USERNAME);
         when(storage.isRegisteredUser(USERNAME)).thenReturn(true);
-        when(storage.isLoggedInUser(USERNAME)).thenReturn(false);
+        when(storage.isLoggedInUser(USERNAME)).thenReturn(true);
         when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.IN_MAIN_MENU);
         cmdExecutor.executeCommand(command,channel);
         assertEquals(1,responses.size());
@@ -72,6 +67,6 @@ public class CommandExecutorTest {
         String response = splitResponse(pair.response());
         SocketChannel channel = pair.channel();
         assertEquals(this.channel,channel);
-        assertEquals(Message.ALREADY_REGISTERED.toString(),response);
+        assertEquals(Message.ALREADY_LOGGED_IN.toString(),response);
     }
 }

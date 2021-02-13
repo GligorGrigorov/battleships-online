@@ -2,10 +2,7 @@ package bg.uni.sofia.fmi.mjt.battleships.commands;
 
 import bg.uni.sofia.fmi.mjt.battleships.exceptions.*;
 import bg.uni.sofia.fmi.mjt.battleships.files.FileHandler;
-import bg.uni.sofia.fmi.mjt.battleships.game.Game;
-import bg.uni.sofia.fmi.mjt.battleships.game.Point;
-import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
-import bg.uni.sofia.fmi.mjt.battleships.game.Table;
+import bg.uni.sofia.fmi.mjt.battleships.game.*;
 import bg.uni.sofia.fmi.mjt.battleships.server.Pair;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
 
@@ -55,7 +52,7 @@ public class CommandExecutor implements Executor {
             if(response.equals("WIN") || response.equals("DEFEAT")){
                 exit(username);
                 exit(opponent);
-            } else {
+            } else if(storage.getGameByName(storage.getCurrentGame(username)).getNumberOfPlayers() == 2){
                 addResponse(opponent, storage.getGameOutput(opponent), storage.getChannel(opponent));
             }
         }
@@ -100,12 +97,12 @@ public class CommandExecutor implements Executor {
     }
 
     String logout(String username) {
-        if (storage.isLoggedInUser(username)) {
+        if (storage.getUserStatus(username) == UserStatus.IN_MAIN_MENU) {
             storage.logOutUser(username);
             storage.setUserStatus(username, UserStatus.OFFLINE);
             return Message.SUCCESSFUL_LOGOUT.toString();
         }
-        return Message.NOT_LOGGED_IN.toString();
+        return Message.NOT_ALLOWED.toString();
     }
 
     String createGame(String username, String[] cmdArguments) {
@@ -174,12 +171,16 @@ public class CommandExecutor implements Executor {
         if (storage.getUserStatus(username) != UserStatus.IN_GAME) {
             return Message.NOT_ALLOWED.toString();
         }
+        Game game = storage.getGameByName(storage.getCurrentGame(username));
+        if(game.getStatus() != Status.IN_PROGRESS) {
+            return "Waiting for opponent";
+        }
         storage.setUserStatus(username, UserStatus.PLAYING);
         return "You are in game";
     }
 
     String exit(String username) {
-        if (!storage.isUserInGame(username)) {
+        if (storage.getUserStatus(username) == UserStatus.IN_MAIN_MENU) {
             return Message.NOT_ALLOWED.toString();
         }
         return storage.leaveGameWithoutSaving(username);
@@ -189,11 +190,12 @@ public class CommandExecutor implements Executor {
         if (storage.getUserStatus(username) != UserStatus.PLAYING) {
             return Message.NOT_ALLOWED.toString();
         }
-        String firstPlayer = storage.getGameByName(storage.getCurrentGame(username)).getCreator();
-        String secondPlayer = storage.getGameByName(storage.getCurrentGame(username)).getOpponent();
-        if (firstPlayer == null || secondPlayer == null) {
-            return "can't save game before start";
+        Game game = storage.getGameByName(storage.getCurrentGame(username));
+        if(game.getStatus() != Status.IN_PROGRESS) {
+            return "Game not in progress";
         }
+        String firstPlayer = game.getCreator();
+        String secondPlayer = game.getOpponent();
         fileHandler.saveGame(username);
         storage.leaveGameWithoutSaving(firstPlayer);
         storage.leaveGameWithoutSaving(secondPlayer);

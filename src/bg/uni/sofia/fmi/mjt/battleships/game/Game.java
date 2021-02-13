@@ -1,32 +1,46 @@
 package bg.uni.sofia.fmi.mjt.battleships.game;
 
+import bg.uni.sofia.fmi.mjt.battleships.exceptions.GameCapacityExceededException;
+import bg.uni.sofia.fmi.mjt.battleships.exceptions.PlayerNotAvailableException;
+
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Game implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 134948039702643492L;
 
-    private final Table[] tables;
-    private final String[] names;
+    private final Map<String, PlayerInGameStatus> playerStatus;
+    private final Map<String, Table> playerTable;
     private final String creator;
     private final String gameName;
     private int numberOfPlayers;
-    private String nextToPlay;
     private Status status;
     private String winner;
+    private String[] playerNames;
+    private int counter;
 
     public Game(String creator, String gameName) {
-        this.tables = new Table[2];
-        this.names = new String[2];
+        playerStatus = new HashMap<>();
+        playerTable = new HashMap<>();
+        playerNames = new String[2];
         this.creator = creator;
         this.gameName = gameName;
         this.numberOfPlayers = 0;
-        nextToPlay = creator;
+        counter = 1;
         this.status = Status.PENDING;
     }
 
+    private boolean isNextToPlay(String name) {
+        return playerNames[counter % 2].equals(name);
+    }
+    private String getOpponent(String name) {
+        return playerStatus.keySet().stream().filter(x -> !x.equals(name)).collect(Collectors.joining());
+    }
     public Status getStatus() {
         return status;
     }
@@ -35,27 +49,32 @@ public class Game implements Serializable {
         return numberOfPlayers;
     }
 
-    public void addPlayer(String name, Table table) {
-        tables[numberOfPlayers] = table;
-        names[numberOfPlayers] = name;
+    public void addPlayer(String name, Table table) throws GameCapacityExceededException {
+        if (status != Status.PENDING) {
+            throw new GameCapacityExceededException("Game is full");
+        }
+        playerNames[numberOfPlayers] = name;
         numberOfPlayers++;
+        playerTable.put(name, table);
+        playerStatus.put(name, PlayerInGameStatus.PLAYING);
         if (numberOfPlayers == 2) {
             status = Status.IN_PROGRESS;
         }
     }
 
     public void surrender(String username) {
-        if(status == Status.PENDING) {
+        if(!playerStatus.containsKey(username)) {
+            throw new PlayerNotAvailableException("Player not in game");
+        }
+        if(status == Status.PENDING || status == Status.FINISHED && numberOfPlayers > 0) {
+            numberOfPlayers--;
             return;
         }
-        if(username.equals(creator)){
-            winner = names[1];
+        if (numberOfPlayers == 2) {
+            winner = playerStatus.keySet().stream().filter(x -> !x.equals(username)).collect(Collectors.joining());
+            status = Status.FINISHED;
+            numberOfPlayers--;
         }
-        if (names[1].equals(username)) {
-            winner = names[0];
-        }
-        status = Status.FINISHED;
-        numberOfPlayers--;
     }
 
     public String attack(String username, Point point) {
@@ -63,38 +82,27 @@ public class Game implements Serializable {
             return "waiting for players";
         }
         if (status == Status.FINISHED) {
-            if (username.equals(winner)) {
-                return "WIN";
-            }
-            return "DEFEAT";
+            return getOutput(username);
         }
-        if (username.equals(names[0]) && username.equals(nextToPlay)) {
-            tables[1].attack(point);
-            nextToPlay = names[1];
-            if (tables[0].getShipCellsRemaining() == 0) {
+        if (isNextToPlay(username)) {
+            String opponent = getOpponent(username);
+            playerTable.get(getOpponent(username)).attack(point);
+            counter++;
+            if (playerTable.get(username).getShipCellsRemaining() == 0) {
+                winner = opponent;
                 return "DEFEAT";
             }
-            if (tables[1].getShipCellsRemaining() == 0) {
+            if (playerTable.get(opponent).getShipCellsRemaining() == 0) {
+                winner = username;
                 return "WIN";
             }
-            return getCreatorOutput();
-        }
-        if (username.equals(names[1]) && username.equals(nextToPlay)) {
-            tables[0].attack(point);
-            nextToPlay = names[0];
-            if (tables[1].getShipCellsRemaining() == 0) {
-                return "DEFEAT";
-            }
-            if (tables[0].getShipCellsRemaining() == 0) {
-                return "WIN";
-            }
-            return getOpponentOutput();
+            return getOutput(username);
         }
         return "not your turn";
     }
 
     public String getOpponent() {
-        return names[1];
+        return getOpponent(creator);
     }
 
     public String getCreator() {
@@ -105,38 +113,14 @@ public class Game implements Serializable {
         return gameName;
     }
 
-    public String getCreatorOutput() {
-        if(winner != null){
-            if(winner.equals(creator)){
-                return "WIN";
-            }
-        }
-        return tables[0].toString(false) + tables[1].toString(true);
-    }
-
-    public String getOpponentOutput() {
-        if(winner != null){
-            if(winner.equals(creator)){
-                return "DEFEAT";
-            }
-        }
-        return tables[1].toString(false) + tables[0].toString(true);
-    }
-
     public String getOutput(String username) {
-        Table table = null;
-        if(winner != null) {
+        if (status == Status.FINISHED) {
             return winner.equals(username) ? "WIN" : "DEFEAT";
         }
-        if (username.equals(names[0])) {
-            table = tables[0];
+        if (status != Status.IN_PROGRESS) {
+            return "Game not in progress";
         }
-        if (username.equals(names[1])) {
-            table = tables[1];
-        }
-        if(table == null) {
-            return "Can't load table";
-        }
-        return table.toString(false) + tables[1].toString(true);
+        return playerTable.get(username).toString(false)
+                + playerTable.get(getOpponent(username)).toString(true);
     }
 }
