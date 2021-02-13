@@ -8,7 +8,6 @@ import bg.uni.sofia.fmi.mjt.battleships.game.Table;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Set;
 
 public interface Storage {
 
@@ -24,13 +23,9 @@ public interface Storage {
 
     void logOutUser(String username);
 
-    Set<String> getGameNames();
-
     Collection<Game> getGames();
 
     boolean containsGameName(String name);
-
-    boolean containsGame(String gameName);
 
     boolean isUserInGame(String username);
 

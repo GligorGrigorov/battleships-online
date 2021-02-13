@@ -64,11 +64,6 @@ public class ServerStorage implements Storage {
     }
 
     @Override
-    public Set<String> getGameNames() {
-        return games.keySet();
-    }
-
-    @Override
     public Collection<Game> getGames() {
         return games.values();
     }
@@ -76,11 +71,6 @@ public class ServerStorage implements Storage {
     @Override
     public boolean containsGameName(String name) {
         return games.containsKey(name);
-    }
-
-    @Override
-    public boolean containsGame(String gameName) {
-        return games.containsKey(gameName);
     }
 
     @Override
@@ -121,9 +111,9 @@ public class ServerStorage implements Storage {
         Game game = games.get(inGameUsers.get(username));
         game.surrender(username);
         String output = game.getOutput(username);
-        setUserStatus(username,UserStatus.IN_MAIN_MENU);
+        setUserStatus(username, UserStatus.IN_MAIN_MENU);
         inGameUsers.remove(username);
-        if(game.getNumberOfPlayers() == 0) {
+        if (game.getNumberOfPlayers() == 0) {
             removeGame(gameName);
         }
         return output;
@@ -132,11 +122,11 @@ public class ServerStorage implements Storage {
     @Override
     public String getGameOutput(String username) {
         String user = inGameUsers.get(username);
-        if(user == null) {
+        if (user == null) {
             return "USEr is null";
         }
         Game game = games.get(user);
-        if(game == null) {
+        if (game == null) {
             return "GAme is null";
         }
         return games.get(inGameUsers.get(username)).getOutput(username);

@@ -102,11 +102,11 @@ public class CommandExecutor implements Executor {
             storage.setUserStatus(username, UserStatus.OFFLINE);
             return Message.SUCCESSFUL_LOGOUT.toString();
         }
-        return Message.NOT_ALLOWED.toString();
+        return Message.WRONG_COMMAND.toString();
     }
 
     String createGame(String username, String[] cmdArguments) {
-        if (storage.isUserInGame(username)) {
+        if (storage.getUserStatus(username) != UserStatus.IN_MAIN_MENU) {
             return Message.NOT_ALLOWED.toString();
         }
         if (storage.containsGameName(cmdArguments[0])) {
@@ -132,7 +132,7 @@ public class CommandExecutor implements Executor {
     }
 
     String listGames(String username) {
-        if (storage.isUserInGame(username)) {
+        if (storage.getUserStatus(username) != UserStatus.IN_MAIN_MENU) {
             return Message.NOT_ALLOWED.toString();
         }
         return gamesTable(storage.getGames());
@@ -276,7 +276,7 @@ public class CommandExecutor implements Executor {
                 String first = tokens[0];
                 String second = tokens[1];
                 if (!isValidCoordinate(first) || !isValidCoordinate(second)) {
-                    throw new IllegalShipCoordinateException("Wrong ship coordinates" + first + " " + second);
+                    throw new IllegalShipCoordinateException("Wrong ship coordinates");
                 }
                 Point p1 = new Point(Integer.parseInt(first.substring(1)), first.charAt(0) - 'A' + 1);
                 Point p2 = new Point(Integer.parseInt(second.substring(1)), second.charAt(0) - 'A' + 1);
@@ -285,8 +285,7 @@ public class CommandExecutor implements Executor {
                 }
                 int shipLength = getSegmentLength(p1, p2);
                 if (!remainingShips.containsKey(shipLength)) {
-                    throw new IllegalShipCoordinateException("Ship with " + shipLength + " length and " +
-                            "coordinates " + p1.toString() + " | " + p2.toString() + "  not available");
+                    throw new IllegalShipCoordinateException("Ship with " + "length " + shipLength +" not available");
                 }
                 if (remainingShips.get(shipLength) == 0) {
                     throw new IllegalShipCoordinateException("No more ships available of this type");
