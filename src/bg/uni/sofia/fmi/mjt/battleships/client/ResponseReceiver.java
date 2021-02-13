@@ -18,6 +18,7 @@ public class ResponseReceiver implements Runnable {
     private final Set<String> clientExitResponses;
     private final SocketChannel channel;
     private final Queue<String> configRequests;
+
     public ResponseReceiver(SocketChannel channel, Queue<String> configRequests) {
         gameExitResponses = new HashSet<>();
         clientExitResponses = new HashSet<>();
@@ -27,6 +28,7 @@ public class ResponseReceiver implements Runnable {
         clientExitResponses.add(Message.ALREADY_LOGGED_IN.toString());
         clientExitResponses.add(Message.SUCCESSFUL_LOGOUT.toString());
     }
+
     @Override
     public void run() {
         while (true) {
@@ -43,7 +45,7 @@ public class ResponseReceiver implements Runnable {
             String reply = new String(byteArray, StandardCharsets.UTF_8);
             System.out.print(reply);
             reply = reply.split(System.lineSeparator())[0];
-            if(gameExitResponses.contains(reply)){
+            if (gameExitResponses.contains(reply)) {
                 configRequests.add("exit");
             }
             if (clientExitResponses.contains(reply)) {

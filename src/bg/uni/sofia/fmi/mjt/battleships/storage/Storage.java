@@ -27,8 +27,6 @@ public interface Storage {
 
     boolean containsGameName(String name);
 
-    boolean isUserInGame(String username);
-
     void addGame(String name, Game game);
 
     void joinAGame(String username, String gameName, Table table);

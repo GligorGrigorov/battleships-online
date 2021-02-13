@@ -10,9 +10,9 @@ public enum Commands {
     LIST_GAMES("list-games", 0),
     EXIT_GAME("exit", 0),
     START("start", 0),
-    SAVE_GAME("save-game",0),
-    SAVED_GAMES("saved-games",0),
-    LOAD_GAME("load-game",1);
+    SAVE_GAME("save-game", 0),
+    SAVED_GAMES("saved-games", 0),
+    LOAD_GAME("load-game", 1);
     private final String name;
     private final int numberOfArguments;
 

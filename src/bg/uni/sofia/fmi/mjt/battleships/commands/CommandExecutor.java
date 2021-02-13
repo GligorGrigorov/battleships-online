@@ -2,12 +2,20 @@ package bg.uni.sofia.fmi.mjt.battleships.commands;
 
 import bg.uni.sofia.fmi.mjt.battleships.exceptions.*;
 import bg.uni.sofia.fmi.mjt.battleships.files.FileHandler;
-import bg.uni.sofia.fmi.mjt.battleships.game.*;
+import bg.uni.sofia.fmi.mjt.battleships.game.Game;
+import bg.uni.sofia.fmi.mjt.battleships.game.Point;
+import bg.uni.sofia.fmi.mjt.battleships.game.Ship;
+import bg.uni.sofia.fmi.mjt.battleships.game.Status;
+import bg.uni.sofia.fmi.mjt.battleships.game.Table;
 import bg.uni.sofia.fmi.mjt.battleships.server.Pair;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
 
 import java.nio.channels.SocketChannel;
-import java.util.*;
+import java.util.Queue;
+import java.util.Collection;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 public class CommandExecutor implements Executor {
@@ -49,10 +57,10 @@ public class CommandExecutor implements Executor {
                 addResponse(username, response, channel);
                 return;
             }
-            if(response.equals("WIN") || response.equals("DEFEAT")){
+            if (response.equals("WIN") || response.equals("DEFEAT")) {
                 exit(username);
                 exit(opponent);
-            } else if(storage.getGameByName(storage.getCurrentGame(username)).getNumberOfPlayers() == 2){
+            } else if (storage.getGameByName(storage.getCurrentGame(username)).getNumberOfPlayers() == 2) {
                 addResponse(opponent, storage.getGameOutput(opponent), storage.getChannel(opponent));
             }
         }
@@ -172,7 +180,7 @@ public class CommandExecutor implements Executor {
             return Message.NOT_ALLOWED.toString();
         }
         Game game = storage.getGameByName(storage.getCurrentGame(username));
-        if(game.getStatus() != Status.IN_PROGRESS) {
+        if (game.getStatus() != Status.IN_PROGRESS) {
             return "Waiting for opponent";
         }
         storage.setUserStatus(username, UserStatus.PLAYING);
@@ -191,7 +199,7 @@ public class CommandExecutor implements Executor {
             return Message.NOT_ALLOWED.toString();
         }
         Game game = storage.getGameByName(storage.getCurrentGame(username));
-        if(game.getStatus() != Status.IN_PROGRESS) {
+        if (game.getStatus() != Status.IN_PROGRESS) {
             return "Game not in progress";
         }
         String firstPlayer = game.getCreator();
@@ -234,7 +242,6 @@ public class CommandExecutor implements Executor {
     }
 
     public String row(int cellSize, String[] elements) {
-        StringBuilder builder = new StringBuilder();
         return Arrays.stream(elements)
                 .map(x -> "| " + x + " ".repeat(cellSize - x.length() - 2))
                 .collect(Collectors.joining(""));
@@ -285,7 +292,7 @@ public class CommandExecutor implements Executor {
                 }
                 int shipLength = getSegmentLength(p1, p2);
                 if (!remainingShips.containsKey(shipLength)) {
-                    throw new IllegalShipCoordinateException("Ship with " + "length " + shipLength +" not available");
+                    throw new IllegalShipCoordinateException("Ship with " + "length " + shipLength + " not available");
                 }
                 if (remainingShips.get(shipLength) == 0) {
                     throw new IllegalShipCoordinateException("No more ships available of this type");

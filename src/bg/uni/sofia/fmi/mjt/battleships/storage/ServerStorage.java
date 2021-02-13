@@ -74,11 +74,6 @@ public class ServerStorage implements Storage {
     }
 
     @Override
-    public boolean isUserInGame(String username) {
-        return inGameUsers.containsKey(username);
-    }
-
-    @Override
     public void addGame(String name, Game game) {
         games.put(name, game);
     }

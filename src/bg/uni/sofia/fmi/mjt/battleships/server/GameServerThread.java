@@ -71,17 +71,6 @@ public class GameServerThread extends Thread {
         return new String(byteArray, StandardCharsets.UTF_8);
     }
 
-    private void sendToClient(String response, SocketChannel clientChannel) throws IOException {
-        response = response + System.lineSeparator();
-        buffer.clear();
-        buffer.put(response.getBytes());
-        buffer.flip();
-        clientChannel.write(buffer);
-        if (response.compareTo("[ Disconnected from server ]" + System.lineSeparator()) == 0) {
-            clientChannel.close();
-        }
-    }
-
     @Override
     public void run() {
         isRunning = true;
@@ -108,8 +97,6 @@ public class GameServerThread extends Thread {
                         }
                         request = request.replace(System.lineSeparator(), "");
                         executor.executeCommand(new Command(request), currentChannel);
-                        //String response = "Default response";
-                        //sendToClient(response, currentChannel);
                     } else if (key.isAcceptable()) {
                         ServerSocketChannel sockChannel = (ServerSocketChannel) key.channel();
                         SocketChannel accept = sockChannel.accept();

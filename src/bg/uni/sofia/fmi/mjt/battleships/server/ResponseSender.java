@@ -10,7 +10,8 @@ public class ResponseSender implements Runnable {
     private static final int BUFFER_SIZE = 2048;
     private ByteBuffer buffer;
     private final Queue<Pair> pairs;
-    public ResponseSender(Queue<Pair> pairs){
+
+    public ResponseSender(Queue<Pair> pairs) {
         this.pairs = pairs;
         buffer = ByteBuffer.allocate(BUFFER_SIZE);
     }
@@ -19,15 +20,15 @@ public class ResponseSender implements Runnable {
     public void run() {
         while (true) {
             synchronized (pairs) {
-                if (pairs.size() == 0){
+                if (pairs.size() == 0) {
                     try {
                         pairs.wait();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-                for (Pair pair:
-                     pairs) {
+                for (Pair pair :
+                        pairs) {
                     String response = pair.response();
                     SocketChannel clientChannel = pair.channel();
                     response = response + System.lineSeparator();

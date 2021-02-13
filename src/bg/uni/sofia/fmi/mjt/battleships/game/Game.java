@@ -6,7 +6,9 @@ import bg.uni.sofia.fmi.mjt.battleships.exceptions.PlayerNotAvailableException;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Game implements Serializable {
@@ -14,18 +16,18 @@ public class Game implements Serializable {
     @Serial
     private static final long serialVersionUID = 134948039702643492L;
 
-    private final Map<String, PlayerInGameStatus> playerStatus;
+    private final Set<String> players;
     private final Map<String, Table> playerTable;
     private final String creator;
     private final String gameName;
     private int numberOfPlayers;
     private Status status;
     private String winner;
-    private String[] playerNames;
+    private final String[] playerNames;
     private int counter;
 
     public Game(String creator, String gameName) {
-        playerStatus = new HashMap<>();
+        players = new HashSet<>();
         playerTable = new HashMap<>();
         playerNames = new String[2];
         this.creator = creator;
@@ -38,9 +40,11 @@ public class Game implements Serializable {
     private boolean isNextToPlay(String name) {
         return playerNames[counter % 2].equals(name);
     }
+
     private String getOpponent(String name) {
-        return playerStatus.keySet().stream().filter(x -> !x.equals(name)).collect(Collectors.joining());
+        return players.stream().filter(x -> !x.equals(name)).collect(Collectors.joining());
     }
+
     public Status getStatus() {
         return status;
     }
@@ -56,22 +60,22 @@ public class Game implements Serializable {
         playerNames[numberOfPlayers] = name;
         numberOfPlayers++;
         playerTable.put(name, table);
-        playerStatus.put(name, PlayerInGameStatus.PLAYING);
+        players.add(name);
         if (numberOfPlayers == 2) {
             status = Status.IN_PROGRESS;
         }
     }
 
     public void surrender(String username) {
-        if(!playerStatus.containsKey(username)) {
+        if (!players.contains(username)) {
             throw new PlayerNotAvailableException("Player not in game");
         }
-        if(status == Status.PENDING || status == Status.FINISHED && numberOfPlayers > 0) {
+        if (status == Status.PENDING || status == Status.FINISHED && numberOfPlayers > 0) {
             numberOfPlayers--;
             return;
         }
         if (numberOfPlayers == 2) {
-            winner = playerStatus.keySet().stream().filter(x -> !x.equals(username)).collect(Collectors.joining());
+            winner = players.stream().filter(x -> !x.equals(username)).collect(Collectors.joining());
             status = Status.FINISHED;
             numberOfPlayers--;
         }

@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.*;
+import java.util.Scanner;
+import java.util.Queue;
+import java.util.LinkedList;
 
 public class ClientThread extends Thread {
 
@@ -34,7 +36,7 @@ public class ClientThread extends Thread {
                 if (configInputs.size() > 0) {
                     message = configInputs.poll();
                 } else {
-                    if(scanner.hasNext()){
+                    if (scanner.hasNext()) {
                         message = scanner.nextLine();
                     } else {
                         break;

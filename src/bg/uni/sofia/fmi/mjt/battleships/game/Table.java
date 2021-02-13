@@ -10,12 +10,10 @@ public class Table implements Serializable {
     private static final long serialVersionUID = 1349480397026438792L;
     private final Cells[][] cells;
     private int shipCellsCount;
-    private Point lastAttack;
 
     public Table(Ship[] ships) throws TableCreationException {
         cells = new Cells[10][10];
         shipCellsCount = 0;
-        lastAttack = null;
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 cells[i][j] = Cells.EMPTY;
@@ -26,7 +24,7 @@ public class Table implements Serializable {
             Point p2 = ship.b();
             if (p1.x() == p2.x()) {
                 for (int j = Math.min(p1.y(), p2.y()) - 1; j < Math.max(p1.y(), p2.y()); j++) {
-                    if(cells[j][p1.x() - 1] == Cells.SHIP) {
+                    if (cells[j][p1.x() - 1] == Cells.SHIP) {
                         throw new TableCreationException("Ships can't overlap");
                     }
                     cells[j][p1.x() - 1] = Cells.SHIP;
@@ -35,7 +33,7 @@ public class Table implements Serializable {
             }
             if (p1.y() == p2.y()) {
                 for (int j = Math.min(p1.x(), p2.x()) - 1; j < Math.max(p1.x(), p2.x()); j++) {
-                    if(cells[p1.y() - 1][j] == Cells.SHIP) {
+                    if (cells[p1.y() - 1][j] == Cells.SHIP) {
                         throw new TableCreationException("Ships can't overlap");
                     }
                     cells[p1.y() - 1][j] = Cells.SHIP;
@@ -61,7 +59,6 @@ public class Table implements Serializable {
             }
             cells[a.y() - 1][a.x() - 1] = cell;
         }
-        lastAttack = a;
     }
 
     public String toString(boolean enemyBoard) {

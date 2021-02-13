@@ -1,6 +1,7 @@
 import bg.uni.sofia.fmi.mjt.battleships.commands.*;
 import bg.uni.sofia.fmi.mjt.battleships.files.FileHandler;
 import bg.uni.sofia.fmi.mjt.battleships.game.Game;
+import bg.uni.sofia.fmi.mjt.battleships.game.Point;
 import bg.uni.sofia.fmi.mjt.battleships.game.Status;
 import bg.uni.sofia.fmi.mjt.battleships.server.Pair;
 import bg.uni.sofia.fmi.mjt.battleships.storage.Storage;
@@ -535,5 +536,56 @@ public class CommandExecutorTest {
         SocketChannel channel = pair.channel();
         assertEquals(this.channel,channel);
         assertEquals("game saved",response);
+    }
+    @Test
+    public void testLoadGameWhenNotInMainMenu() {
+        when(command.getName()).thenReturn("load-game");
+        when(command.getArguments()).thenReturn(new String[1]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.PLAYING);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(1,responses.size());
+        Pair pair = responses.remove();
+        String response = splitResponse(pair.response());
+        SocketChannel channel = pair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals(Message.NOT_ALLOWED.toString(),response);
+    }
+    @Test
+    public void testLoadGame() {
+        when(command.getName()).thenReturn("load-game");
+        when(command.getArguments()).thenReturn(new String[1]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.IN_MAIN_MENU);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(1,responses.size());
+        Pair pair = responses.remove();
+        String response = splitResponse(pair.response());
+        SocketChannel channel = pair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals("successfully loaded game",response);
+    }
+    @Test
+    public void testAttack() {
+        when(command.getName()).thenReturn("A5");
+        when(command.getArguments()).thenReturn(new String[0]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.PLAYING);
+        String opponent = "player111";
+        String gameName = "testGame";
+        String userOutput = "userO";
+        when(storage.attack(USERNAME, new Point(1,1))).thenReturn(userOutput);
+        when(storage.getGameOutput(USERNAME)).thenReturn(userOutput);
+        when(storage.getChannel(USERNAME)).thenReturn(channel);
+        when(storage.getOpponent(USERNAME)).thenReturn(opponent);
+        when(storage.getCurrentGame(USERNAME)).thenReturn(gameName);
+        Game testGame = mock(Game.class);
+        when(storage.getGameByName(gameName)).thenReturn(testGame);
+        when(testGame.getNumberOfPlayers()).thenReturn(2);
+        String opponentOutput = "opponentO";
+        when(storage.getGameOutput(opponent)).thenReturn(opponentOutput);
+        SocketChannel opponentChannel = mock(SocketChannel.class);
+        when(storage.getChannel(opponent)).thenReturn(opponentChannel);
+        assertEquals(2,responses.size());
     }
 }
