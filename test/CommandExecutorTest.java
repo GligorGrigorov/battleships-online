@@ -349,7 +349,6 @@ public class CommandExecutorTest {
         cmdExecutor.executeCommand(command,channel);
         assertEquals(1,responses.size());
         Pair pair = responses.remove();
-        String response = splitResponse(pair.response());
         List<String> expectedLines = new ArrayList<>();
         SocketChannel channel = pair.channel();
         assertEquals(this.channel,channel);
@@ -362,5 +361,179 @@ public class CommandExecutorTest {
         assertTrue(returnedLines.contains(expectedLines.get(1)));
         assertTrue(returnedLines.contains(expectedLines.get(2)));
         assertTrue(returnedLines.contains(expectedLines.get(3)));
+    }
+    @Test
+    public void testJoinGameWhenNotInMainMenu(){
+        when(command.getName()).thenReturn("join-game");
+        when(command.getArguments()).thenReturn(new String[11]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.IN_GAME);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(1,responses.size());
+        Pair pair = responses.remove();
+        String response = splitResponse(pair.response());
+        SocketChannel channel = pair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals(Message.NOT_ALLOWED.toString(),response);
+    }
+    @Test
+    public void testJoinGameWhenGameDoNotExist(){
+        when(command.getName()).thenReturn("join-game");
+        when(command.getArguments()).thenReturn(new String[11]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.IN_MAIN_MENU);
+        when(storage.containsGameName(any(String.class))).thenReturn(false);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(1,responses.size());
+        Pair pair = responses.remove();
+        String response = splitResponse(pair.response());
+        SocketChannel channel = pair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals(Message.GAME_DO_NOT_EXIST.toString(),response);
+    }
+    @Test
+    public void testJoinGameWithValidCoordinates(){
+        when(command.getName()).thenReturn("join-game");
+        String[] args = new String[11];
+        args[0] = "testGame";
+        args[1] = "A1,E1";
+        args[2] = "A3,D3";
+        args[3] = "A5,D5";
+        args[4] = "A7,C7";
+        args[5] = "E7,G7";
+        args[6] = "I4,I6";
+        args[7] = "J10,J9";
+        args[8] = "H10,G10";
+        args[9] = "J1,J2";
+        args[10] = "I2,I3";
+        when(command.getArguments()).thenReturn(args);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.IN_MAIN_MENU);
+        when(storage.containsGameName(args[0])).thenReturn(true);
+        String opponent = "player2";
+        when(storage.getOpponent(USERNAME)).thenReturn(opponent);
+        SocketChannel opponentChannel = mock(SocketChannel.class);
+        when(storage.getChannel(opponent)).thenReturn(opponentChannel);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(2,responses.size());
+        Pair opponentPair = responses.remove();
+        Pair userPair = responses.remove();
+        String userResponse = splitResponse(userPair.response());
+        String opponentResponse = splitResponse(opponentPair.response());
+        SocketChannel channel = userPair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals("Successfully joined a game " + args[0],userResponse);
+        assertEquals(USERNAME + " joined the game.",opponentResponse);
+    }
+
+    @Test
+    public void testStartGameWhenNotInGame() {
+        when(command.getName()).thenReturn("start");
+        when(command.getArguments()).thenReturn(new String[0]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.IN_MAIN_MENU);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(1,responses.size());
+        Pair pair = responses.remove();
+        String response = splitResponse(pair.response());
+        SocketChannel channel = pair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals(Message.NOT_ALLOWED.toString(),response);
+    }
+    @Test
+    public void testStartGameWhenGameNotInProgress() {
+        when(command.getName()).thenReturn("start");
+        when(command.getArguments()).thenReturn(new String[0]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.IN_GAME);
+        Game game = mock(Game.class);
+        when(storage.getGameByName(any(String.class))).thenReturn(game);
+        when(game.getStatus()).thenReturn(Status.FINISHED);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(1,responses.size());
+        Pair pair = responses.remove();
+        String response = splitResponse(pair.response());
+        SocketChannel channel = pair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals("Waiting for opponent",response);
+    }
+    @Test
+    public void testStartGame() {
+        when(command.getName()).thenReturn("start");
+        when(command.getArguments()).thenReturn(new String[0]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.IN_GAME);
+        Game game = mock(Game.class);
+        when(storage.getGameByName(any(String.class))).thenReturn(game);
+        when(game.getStatus()).thenReturn(Status.IN_PROGRESS);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(1,responses.size());
+        Pair pair = responses.remove();
+        String response = splitResponse(pair.response());
+        SocketChannel channel = pair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals("You are in game",response);
+    }
+    @Test
+    public void testExit() {
+        when(command.getName()).thenReturn("exit");
+        when(command.getArguments()).thenReturn(new String[0]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.IN_MAIN_MENU);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(1,responses.size());
+        Pair pair = responses.remove();
+        String response = splitResponse(pair.response());
+        SocketChannel channel = pair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals(Message.NOT_ALLOWED.toString(),response);
+    }
+    @Test
+    public void testSaveGameWhenNotInGame() {
+        when(command.getName()).thenReturn("save-game");
+        when(command.getArguments()).thenReturn(new String[0]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.IN_MAIN_MENU);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(1,responses.size());
+        Pair pair = responses.remove();
+        String response = splitResponse(pair.response());
+        SocketChannel channel = pair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals(Message.NOT_ALLOWED.toString(),response);
+    }
+    @Test
+    public void testSaveGameWhenGameNotInProgress() {
+        when(command.getName()).thenReturn("save-game");
+        when(command.getArguments()).thenReturn(new String[0]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.PLAYING);
+        Game game = mock(Game.class);
+        when(storage.getGameByName(any(String.class))).thenReturn(game);
+        when(game.getStatus()).thenReturn(Status.PENDING);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(1,responses.size());
+        Pair pair = responses.remove();
+        String response = splitResponse(pair.response());
+        SocketChannel channel = pair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals("Game not in progress",response);
+    }
+    @Test
+    public void testSaveGame() {
+        when(command.getName()).thenReturn("save-game");
+        when(command.getArguments()).thenReturn(new String[0]);
+        when(command.getUsername()).thenReturn(USERNAME);
+        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.PLAYING);
+        Game game = mock(Game.class);
+        when(storage.getGameByName(any(String.class))).thenReturn(game);
+        when(game.getStatus()).thenReturn(Status.IN_PROGRESS);
+        cmdExecutor.executeCommand(command,channel);
+        assertEquals(1,responses.size());
+        Pair pair = responses.remove();
+        String response = splitResponse(pair.response());
+        SocketChannel channel = pair.channel();
+        assertEquals(this.channel,channel);
+        assertEquals("game saved",response);
     }
 }
