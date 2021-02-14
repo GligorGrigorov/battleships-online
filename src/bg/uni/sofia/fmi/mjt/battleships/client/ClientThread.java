@@ -51,7 +51,6 @@ public class ClientThread extends Thread {
             System.out.println("Closing game client...");
         } catch (IOException e) {
             System.err.print("IO exception was thrown: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 }

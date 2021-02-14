@@ -88,6 +88,7 @@ public class CommandExecutor implements Executor {
             case "save-game" -> saveGame(username);
             case "saved-games" -> savedGames(username);
             case "load-game" -> loadGame(username, cmdArguments);
+            case "help" -> help();
             default -> null;
         };
     }
@@ -224,10 +225,16 @@ public class CommandExecutor implements Executor {
         if (storage.getUserStatus(username) != UserStatus.IN_MAIN_MENU) {
             return Message.NOT_ALLOWED.toString();
         }
-        fileHandler.loadGame(storage.getSavedGame(username, cmdArguments[0]));
+        fileHandler.loadGame(username, storage.getSavedGame(username, cmdArguments[0]));
         storage.setUserStatus(username, UserStatus.IN_GAME);
         storage.continuePlaying(username, cmdArguments[0]);
         return "successfully loaded game";
+    }
+
+    private String help() {
+        return Arrays.stream(Commands.values())
+                .map(x -> x.getName() + " " +  x.getNumberOfArguments() + " arguments")
+                .collect(Collectors.joining(System.lineSeparator()));
     }
 
     private String gamesTable(Collection<Game> games) {

@@ -12,7 +12,8 @@ public enum Commands {
     START("start", 0),
     SAVE_GAME("save-game", 0),
     SAVED_GAMES("saved-games", 0),
-    LOAD_GAME("load-game", 1);
+    LOAD_GAME("load-game", 1),
+    HELP("help",0);
     private final String name;
     private final int numberOfArguments;
 
@@ -25,6 +26,9 @@ public enum Commands {
         return name;
     }
 
+    public int getNumberOfArguments() {
+        return numberOfArguments;
+    }
     public static boolean containsCommand(Command command) {
         return Arrays.stream(Commands.values()).anyMatch(x -> command.getName()
                 .equals(x.getName()) && command.getArguments().length == x.numberOfArguments);

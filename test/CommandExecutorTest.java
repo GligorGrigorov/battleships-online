@@ -28,6 +28,7 @@ public class CommandExecutorTest {
     private String splitResponse(String input) {
         return input.split(System.lineSeparator())[0];
     }
+
     @Before
     public void setUp() {
         storage = mock(Storage.class);
@@ -564,28 +565,5 @@ public class CommandExecutorTest {
         SocketChannel channel = pair.channel();
         assertEquals(this.channel,channel);
         assertEquals("successfully loaded game",response);
-    }
-    @Test
-    public void testAttack() {
-        when(command.getName()).thenReturn("A5");
-        when(command.getArguments()).thenReturn(new String[0]);
-        when(command.getUsername()).thenReturn(USERNAME);
-        when(storage.getUserStatus(USERNAME)).thenReturn(UserStatus.PLAYING);
-        String opponent = "player111";
-        String gameName = "testGame";
-        String userOutput = "userO";
-        when(storage.attack(USERNAME, new Point(1,1))).thenReturn(userOutput);
-        when(storage.getGameOutput(USERNAME)).thenReturn(userOutput);
-        when(storage.getChannel(USERNAME)).thenReturn(channel);
-        when(storage.getOpponent(USERNAME)).thenReturn(opponent);
-        when(storage.getCurrentGame(USERNAME)).thenReturn(gameName);
-        Game testGame = mock(Game.class);
-        when(storage.getGameByName(gameName)).thenReturn(testGame);
-        when(testGame.getNumberOfPlayers()).thenReturn(2);
-        String opponentOutput = "opponentO";
-        when(storage.getGameOutput(opponent)).thenReturn(opponentOutput);
-        SocketChannel opponentChannel = mock(SocketChannel.class);
-        when(storage.getChannel(opponent)).thenReturn(opponentChannel);
-        assertEquals(2,responses.size());
     }
 }

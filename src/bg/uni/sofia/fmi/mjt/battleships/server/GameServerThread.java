@@ -35,7 +35,7 @@ public class GameServerThread extends Thread {
         serverPort = port;
         storage = new ServerStorage();
         responsesQueue = new LinkedList<>();
-        executor = new CommandExecutor(storage, new FileHandler(Path.of(GAMES_FILENAME), storage), responsesQueue);
+        executor = new CommandExecutor(storage, new FileHandler(Path.of(GAMES_FILENAME), storage, responsesQueue), responsesQueue);
         sender = new ResponseSender(responsesQueue);
         Thread senderThread = new Thread(sender);
         senderThread.setDaemon(true);
@@ -82,6 +82,7 @@ public class GameServerThread extends Thread {
             selector = Selector.open();
             serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
             buffer = ByteBuffer.allocate(BUFFER_SIZE);
+
             while (isRunning) {
                 int readyChannels = selector.select();
                 if (readyChannels == 0) {
@@ -89,6 +90,7 @@ public class GameServerThread extends Thread {
                 }
                 Set<SelectionKey> selectedKeys = selector.selectedKeys();
                 Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
+
                 while (keyIterator.hasNext()) {
                     SelectionKey key = keyIterator.next();
                     if (key.isReadable()) {
